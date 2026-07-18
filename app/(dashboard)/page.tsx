@@ -11,6 +11,7 @@ import {
   Flag,
   MapPinned,
   Mail,
+  RefreshCw,
   Shapes,
   Sparkles,
   Trophy,
@@ -136,14 +137,28 @@ function StatCard({
 
 export default function OverviewPage() {
   const [days, setDays] = useState<number>(30);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: statsData, loading: statsLoading } = useQuery(ADMIN_DASHBOARD_STATS);
-  const { data: analyticsData, loading: analyticsLoading } = useQuery(ADMIN_ANALYTICS, {
+  const { data: statsData, loading: statsLoading, refetch: refetchStats } = useQuery(ADMIN_DASHBOARD_STATS);
+  const { data: analyticsData, loading: analyticsLoading, refetch: refetchAnalytics } = useQuery(ADMIN_ANALYTICS, {
     variables: { days },
   });
-  const { data: pendingData, loading: pendingLoading } = useQuery(PENDING_APPROVAL_CONTENT, {
+  const { data: pendingData, loading: pendingLoading, refetch: refetchPending } = useQuery(PENDING_APPROVAL_CONTENT, {
     variables: { limit: 5, offset: 0 },
   });
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchStats(),
+        refetchAnalytics({ days }),
+        refetchPending({ limit: 5, offset: 0 }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const stats = statsData?.adminDashboardStats;
   const analytics = analyticsData?.adminAnalytics;
@@ -212,18 +227,28 @@ export default function OverviewPage() {
           </p>
         </div>
 
-        <div className="inline-flex w-full rounded-full border border-border bg-elevated p-1 lg:w-auto">
-          {RANGE_OPTIONS.map((option) => (
-            <Button
-              key={option.days}
-              variant={days === option.days ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setDays(option.days)}
-              className="flex-1 lg:flex-none"
-            >
-              {option.label}
-            </Button>
-          ))}
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => void handleRefresh()}
+            loading={refreshing}
+          >
+            {!refreshing && <RefreshCw className="size-4" />}
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </Button>
+          <div className="inline-flex w-full rounded-full border border-border bg-elevated p-1 sm:w-auto">
+            {RANGE_OPTIONS.map((option) => (
+              <Button
+                key={option.days}
+                variant={days === option.days ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setDays(option.days)}
+                className="flex-1 sm:flex-none"
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 

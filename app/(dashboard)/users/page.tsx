@@ -1,9 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
-import { Search, UserPlus, ShieldCheck, UserCog, Ban, Undo2, BadgeCheck } from "lucide-react";
+import {
+  Search,
+  UserPlus,
+  ShieldCheck,
+  UserCog,
+  Ban,
+  Undo2,
+  BadgeCheck,
+  RefreshCw,
+  MoreHorizontal,
+} from "lucide-react";
 import { ADMIN_USERS } from "@/graphql/operations";
 import { UserRole, type AdminUser } from "@/graphql/types";
 import { formatDate, formatRelative, displayName } from "@/lib/format";
@@ -67,8 +77,11 @@ export default function UsersPage() {
   const [suspendUser, setSuspendUser] = useState<AdminUser | null>(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [openActionUserId, setOpenActionUserId] = useState<string | null>(null);
+  const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const { data, loading } = useQuery(ADMIN_USERS, {
+  const { data, loading, refetch } = useQuery(ADMIN_USERS, {
     variables: {
       page,
       limit: PAGE_SIZE,
@@ -106,6 +119,44 @@ export default function UsersPage() {
 
     return () => window.clearTimeout(handle);
   }, [search]);
+
+  useEffect(() => {
+    if (!openActionUserId) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!actionMenuRef.current?.contains(event.target as Node)) {
+        setOpenActionUserId(null);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpenActionUserId(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [openActionUserId]);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await refetch({
+        page,
+        limit: PAGE_SIZE,
+        search: submittedSearch || null,
+        role: (roleFilter as UserRole) || null,
+        suspended: suspendedFilter === "" ? null : suspendedFilter === "true",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -150,10 +201,20 @@ export default function UsersPage() {
           </div>
         </div>
 
-        <Button onClick={() => setCreateOpen(true)}>
-          <UserPlus />
-          New staff account
-        </Button>
+        <div className="flex items-center gap-2 self-start lg:self-auto">
+          <Button
+            variant="outline"
+            onClick={() => void handleRefresh()}
+            loading={refreshing}
+          >
+            {!refreshing && <RefreshCw />}
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </Button>
+          <Button onClick={() => setCreateOpen(true)}>
+            <UserPlus />
+            New staff account
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -239,58 +300,80 @@ export default function UsersPage() {
                         {formatRelative(user.createdAt)}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setRolesUser(user);
-                              setRolesOpen(true);
-                            }}
-                          >
-                            <UserCog />
-                            Roles
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={user.isVerified ? "success" : "outline"}
-                            onClick={() => {
-                              setVerifyUser(user);
-                              setVerifyOpen(true);
-                            }}
-                          >
-                            <BadgeCheck />
-                            {user.isVerified ? "Verified" : "Verify"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={user.isSuspended ? "success" : "ghost"}
-                            className={
-                              user.isSuspended ? undefined : "text-error hover:bg-error-soft"
-                            }
-                            disabled={isMe && !user.isSuspended}
-                            title={
-                              isMe && !user.isSuspended
-                                ? "You cannot suspend your own account"
-                                : undefined
-                            }
-                            onClick={() => {
-                              setSuspendUser(user);
-                              setSuspendOpen(true);
-                            }}
-                          >
-                            {user.isSuspended ? (
-                              <>
-                                <Undo2 />
-                                Reinstate
-                              </>
-                            ) : (
-                              <>
-                                <Ban />
-                                Suspend
-                              </>
+                        <div className="flex items-center justify-end" ref={openActionUserId === user.id ? actionMenuRef : null}>
+                          <div className="relative">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-8 rounded-full"
+                              onClick={() =>
+                                setOpenActionUserId((current) => (current === user.id ? null : user.id))
+                              }
+                              aria-label="User actions"
+                              aria-expanded={openActionUserId === user.id}
+                              aria-haspopup="menu"
+                            >
+                              <MoreHorizontal />
+                            </Button>
+
+                            {openActionUserId === user.id && (
+                              <div
+                                role="menu"
+                                className="absolute right-0 top-10 z-[60] min-w-44 rounded-2xl border border-border bg-elevated p-1.5 shadow-lg"
+                              >
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() => {
+                                    setOpenActionUserId(null);
+                                    setRolesUser(user);
+                                    setRolesOpen(true);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-subtle"
+                                >
+                                  <UserCog />
+                                  Roles
+                                </button>
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() => {
+                                    setOpenActionUserId(null);
+                                    setVerifyUser(user);
+                                    setVerifyOpen(true);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-subtle"
+                                >
+                                  <BadgeCheck />
+                                  {user.isVerified ? "Verified" : "Verify"}
+                                </button>
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  disabled={isMe && !user.isSuspended}
+                                  title={
+                                    isMe && !user.isSuspended
+                                      ? "You cannot suspend your own account"
+                                      : undefined
+                                  }
+                                  onClick={() => {
+                                    if (isMe && !user.isSuspended) return;
+                                    setOpenActionUserId(null);
+                                    setSuspendUser(user);
+                                    setSuspendOpen(true);
+                                  }}
+                                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors ${
+                                    user.isSuspended
+                                      ? "text-foreground hover:bg-subtle"
+                                      : "text-error hover:bg-error-soft"
+                                  } disabled:pointer-events-none disabled:opacity-50`}
+                                >
+                                  {user.isSuspended ? <Undo2 /> : <Ban />}
+                                  {user.isSuspended ? "Reinstate" : "Suspend"}
+                                </button>
+                              </div>
                             )}
-                          </Button>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>

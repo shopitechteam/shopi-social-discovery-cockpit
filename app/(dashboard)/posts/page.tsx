@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import { Search, Flag } from "lucide-react";
+import { Search, Flag, RefreshCw } from "lucide-react";
 import { ADMIN_CONTENT, ADMIN_DASHBOARD_STATS } from "@/graphql/operations";
 import { ContentStatus, type AdminContent } from "@/graphql/types";
 import { formatRelative, formatNumber, formatPrice, displayName } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -49,10 +50,11 @@ export default function PostsPage() {
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [selected, setSelected] = useState<AdminContent | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const activeTab = TABS.find((t) => t.key === tab) ?? TABS[0];
 
-  const { data, loading } = useQuery(ADMIN_CONTENT, {
+  const { data, loading, refetch } = useQuery(ADMIN_CONTENT, {
     variables: {
       page,
       limit: PAGE_SIZE,
@@ -61,7 +63,7 @@ export default function PostsPage() {
     },
   });
 
-  const { data: statsData } = useQuery(ADMIN_DASHBOARD_STATS);
+  const { data: statsData, refetch: refetchStats } = useQuery(ADMIN_DASHBOARD_STATS);
   const pendingCount = statsData?.adminDashboardStats.pendingReviewContent ?? 0;
 
   const posts = useMemo(() => data?.adminContent.data ?? [], [data]);
@@ -90,6 +92,23 @@ export default function PostsPage() {
 
     return () => window.clearTimeout(handle);
   }, [search]);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetch({
+          page,
+          limit: PAGE_SIZE,
+          status: activeTab.status ?? null,
+          search: submittedSearch || null,
+        }),
+        refetchStats(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -122,14 +141,24 @@ export default function PostsPage() {
           ))}
         </div>
 
-        <div className="relative w-full lg:w-72">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search title or caption…"
-            className="pl-9"
-          />
+        <div className="flex w-full items-center gap-2 lg:w-auto">
+          <div className="relative flex-1 lg:w-72 lg:flex-none">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search title or caption…"
+              className="pl-9"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => void handleRefresh()}
+            loading={refreshing}
+          >
+            {!refreshing && <RefreshCw />}
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </Button>
         </div>
       </div>
 

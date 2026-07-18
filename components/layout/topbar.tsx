@@ -10,6 +10,7 @@ import { useThemeStore } from "@/stores/theme";
 import { displayName } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import { MobileNav } from "@/components/layout/mobile-nav";
 
 const TITLES: Record<string, string> = {
   "/": "Overview",
@@ -54,7 +55,10 @@ export function Topbar() {
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur md:px-6">
-      <h1 className="text-lg font-bold text-foreground">{title}</h1>
+      <div className="flex items-center gap-2">
+        <MobileNav />
+        <h1 className="text-lg font-bold text-foreground">{title}</h1>
+      </div>
 
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">

@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Clock3,
   EyeOff,
+  RefreshCw,
   Search,
   ShieldAlert,
   Trash2,
@@ -25,6 +26,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Pagination } from "@/components/shared/pagination";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -113,15 +115,16 @@ export default function ModerationPage() {
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [selected, setSelected] = useState<AdminContent | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: statsData, loading: statsLoading } = useQuery(ADMIN_DASHBOARD_STATS);
-  const { data: urgentData, loading: urgentLoading } = useQuery(PENDING_APPROVAL_CONTENT, {
+  const { data: statsData, loading: statsLoading, refetch: refetchStats } = useQuery(ADMIN_DASHBOARD_STATS);
+  const { data: urgentData, loading: urgentLoading, refetch: refetchUrgent } = useQuery(PENDING_APPROVAL_CONTENT, {
     variables: { limit: 6, offset: 0 },
   });
 
   const activeTab = TAB_CONFIG.find((item) => item.key === tab) ?? TAB_CONFIG[0];
 
-  const { data, loading } = useQuery(ADMIN_CONTENT, {
+  const { data, loading, refetch } = useQuery(ADMIN_CONTENT, {
     variables: {
       page,
       limit: PAGE_SIZE,
@@ -158,6 +161,25 @@ export default function ModerationPage() {
     setDetailOpen(true);
   }
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetch({
+          page,
+          limit: PAGE_SIZE,
+          status: activeTab.status ?? null,
+          search: submittedSearch || null,
+          reported: activeTab.reported ?? null,
+        }),
+        refetchStats(),
+        refetchUrgent({ limit: 6, offset: 0 }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -172,6 +194,14 @@ export default function ModerationPage() {
             This workspace centralizes the moderation-heavy post flows that were previously scattered through the posts tab. Rejections always capture a creator-facing reason, and reported listings can now be reviewed as a dedicated queue.
           </p>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => void handleRefresh()}
+          loading={refreshing}
+        >
+          {!refreshing && <RefreshCw className="size-4" />}
+          {refreshing ? "Refreshing..." : "Refresh"}
+        </Button>
       </div>
 
       {statsLoading && !stats ? (
