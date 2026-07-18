@@ -1,0 +1,198 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Theme toggles via a `.dark` class on <html> (stores/theme.ts) — same
+   convention as the main Shopi web app, so `dark:` utilities key off the
+   class rather than the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* ── GLOBAL UI SCALE ─────────────────────────────────────────────
+     The single knob for text size across the whole dashboard.
+     Everything is rem-based, so this scales all text (and spacing)
+     proportionally. 100% = browser default (16px base).
+       112.5% = 18px base   (current)
+       106.25% = 17px base
+       125%   = 20px base
+     Change this one value and reload — nothing else to touch. */
+  --ui-scale: 112.5%;
+
+  /* Brand — space-separated channels so `rgb(var(--x) / alpha)` works.
+     Identical to the Shopi web app palette. */
+  --brand-primary: 216 20 112;
+  --brand-secondary: 255 159 64;
+  --brand-accent: 99 91 255;
+
+  /* Surfaces */
+  --color-bg: 255 255 255;
+  --color-bg-subtle: 248 248 250;
+  --color-bg-elevated: 255 255 255;
+
+  /* Borders */
+  --color-border: 226 226 232;
+  --color-border-strong: 180 180 192;
+
+  /* Text */
+  --color-text: 15 15 20;
+  --color-text-muted: 100 100 115;
+  --color-text-placeholder: 115 115 130;
+  --color-text-on-brand: 255 255 255;
+
+  --color-subtle: 242 244 245;
+
+  /* State */
+  --color-success: 34 197 94;
+  --color-warning: 251 191 36;
+  --color-error: 239 68 68;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+}
+
+:root {
+  /* ── Chart tokens ─────────────────────────────────────────────────
+     Validated (dataviz six checks) against the light surface #ffffff.
+     --chart-1..4 are the categorical series slots (fixed order, never
+     cycled); --chart-accent is the brand hue for single-series marks;
+     status colors are reserved for state (donut slices) and always
+     paired with a label. */
+  --chart-1: #2a78d6; /* blue */
+  --chart-2: #008300; /* green */
+  --chart-3: #e87ba4; /* magenta */
+  --chart-4: #eda100; /* yellow */
+  --chart-accent: #d81470; /* brand pink — single-series marks */
+  --chart-good: #0ca30c;
+  --chart-warning: #fab219;
+  --chart-serious: #ec835a;
+  --chart-critical: #d03b3b;
+  --chart-info: #2a78d6;
+  --chart-neutral: #9a9891;
+  --chart-neutral-soft: #c9c7c0;
+  --chart-violet: #4a3aa7;
+  --chart-grid: rgb(var(--color-border) / 0.6);
+}
+
+.dark {
+  /* Same hues re-stepped for the dark surface #08080a — validated separately. */
+  --chart-1: #3987e5;
+  --chart-2: #008300;
+  --chart-3: #d55181;
+  --chart-4: #c98500;
+  --chart-accent: #ea1979;
+  --chart-good: #0ca30c;
+  --chart-warning: #fab219;
+  --chart-serious: #ec835a;
+  --chart-critical: #d03b3b;
+  --chart-info: #3987e5;
+  --chart-neutral: #85837c;
+  --chart-neutral-soft: #52514e;
+  --chart-violet: #9085e9;
+}
+
+.dark {
+  --color-bg: 8 8 10;
+  --color-bg-subtle: 20 20 24;
+  --color-bg-elevated: 14 14 17;
+
+  --color-border: 40 40 46;
+  --color-border-strong: 62 62 72;
+
+  --color-text: 240 240 245;
+  --color-text-muted: 148 148 165;
+  --color-text-placeholder: 90 90 105;
+
+  --color-subtle: 20 20 24;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Tailwind v4 theme tokens ─────────────────────────────────── */
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-primary: rgb(var(--brand-primary));
+  --color-primary-soft: rgb(var(--brand-primary) / 0.12);
+  --color-primary-strong: #be0f60;
+  --color-secondary: rgb(var(--brand-secondary));
+  --color-secondary-soft: rgb(var(--brand-secondary) / 0.12);
+  --color-secondary-strong: #b45f0a;
+  --color-accent: rgb(var(--brand-accent));
+  --color-accent-soft: rgb(var(--brand-accent) / 0.12);
+
+  --color-background: rgb(var(--color-bg));
+  --color-surface: rgb(var(--color-bg-subtle));
+  --color-elevated: rgb(var(--color-bg-elevated));
+  --color-subtle: rgb(var(--color-subtle));
+
+  --color-border: rgb(var(--color-border));
+  --color-border-strong: rgb(var(--color-border-strong));
+  --color-foreground: rgb(var(--color-text));
+  --color-muted: rgb(var(--color-text-muted));
+  --color-placeholder: rgb(var(--color-text-placeholder));
+  --color-on-brand: rgb(var(--color-text-on-brand));
+
+  --color-success: rgb(var(--color-success));
+  --color-success-soft: rgb(var(--color-success) / 0.12);
+  --color-warning: rgb(var(--color-warning));
+  --color-warning-soft: rgb(var(--color-warning) / 0.14);
+  --color-error: rgb(var(--color-error));
+  --color-error-soft: rgb(var(--color-error) / 0.12);
+}
+
+/* ─── Base ─────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  transition:
+    background-color 0.18s linear,
+    border-color 0.18s linear,
+    color 0.18s linear,
+    box-shadow 0.18s linear;
+}
+
+*:where(img, video, svg image) {
+  transition: none;
+}
+
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
+html {
+  /* All rem units in the app key off this — see --ui-scale at the top. */
+  font-size: var(--ui-scale);
+  color-scheme: light;
+  scrollbar-gutter: stable;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-text));
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Radix scroll-lock compensation is redundant with scrollbar-gutter: stable */
+body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
