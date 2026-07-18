@@ -136,6 +136,7 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     if (!selectedCategory || !editOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditName(selectedCategory.name);
     setEditSlug(selectedCategory.slug);
     setEditSlugTouched(false);

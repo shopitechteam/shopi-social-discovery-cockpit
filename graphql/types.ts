@@ -287,6 +287,32 @@ export interface AdminGrowthAnalytics {
   browsers: NamedCount[];
 }
 
+export interface AdminSystemFlag {
+  key: string;
+  label: string;
+  healthy: boolean;
+  detail?: string | null;
+}
+
+export interface AdminSystemOverview {
+  timestamp: string;
+  workersEnabled: boolean;
+  redisAvailable: boolean;
+  queuesAvailable: boolean;
+  totalAdmins: number;
+  lockedAdminAccounts: number;
+  suspendedUsers: number;
+  pendingReviewContent: number;
+  processingContent: number;
+  failedContent: number;
+  reportedContent: number;
+  scheduledPublishes: number;
+  failedSchedules: number;
+  integrations: AdminSystemFlag[];
+  recentFailedContent: AdminContent[];
+  oldestProcessingContent: AdminContent[];
+}
+
 export interface AdminCreatorSummary {
   creator: AdminUser;
   postCount: number;

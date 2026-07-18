@@ -6,6 +6,7 @@ import type {
   AdminContent,
   AdminDashboardStats,
   AdminGrowthAnalytics,
+  AdminSystemOverview,
   AdminUser,
   AuthPayload,
   Category,
@@ -318,6 +319,42 @@ export const ADMIN_GROWTH_ANALYTICS: TypedDocumentNode<
       }
     }
   }
+`;
+
+export const ADMIN_SYSTEM_OVERVIEW: TypedDocumentNode<
+  { adminSystemOverview: AdminSystemOverview },
+  Record<string, never>
+> = gql`
+  query AdminSystemOverview {
+    adminSystemOverview {
+      timestamp
+      workersEnabled
+      redisAvailable
+      queuesAvailable
+      totalAdmins
+      lockedAdminAccounts
+      suspendedUsers
+      pendingReviewContent
+      processingContent
+      failedContent
+      reportedContent
+      scheduledPublishes
+      failedSchedules
+      integrations {
+        key
+        label
+        healthy
+        detail
+      }
+      recentFailedContent {
+        ...AdminContentFields
+      }
+      oldestProcessingContent {
+        ...AdminContentFields
+      }
+    }
+  }
+  ${ADMIN_CONTENT_FIELDS}
 `;
 
 // ── Content moderation ───────────────────────────────────────────────────────

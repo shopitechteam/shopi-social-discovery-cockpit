@@ -160,6 +160,7 @@ function SuspendCreatorDialog({
   const [setSuspended, { loading }] = useMutation(ADMIN_SET_USER_SUSPENDED);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!open) setReason("");
   }, [open]);
 
@@ -255,6 +256,7 @@ export default function CreatorsPage() {
 
   useEffect(() => {
     if (creators.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedCreatorId(null);
       return;
     }
