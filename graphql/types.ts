@@ -258,6 +258,35 @@ export interface AdminAnalytics {
   topCreators: TopCreatorStat[];
 }
 
+export interface GrowthFunnelMetric {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface AdminGrowthAnalytics {
+  from: string;
+  to: string;
+  trackedSessions: number;
+  repeatActiveUsers: number;
+  creatorCount: number;
+  activeCreators: number;
+  pendingApprovalPosts: number;
+  totalViews: number;
+  totalSaves: number;
+  totalProductClicks: number;
+  conversationsStarted: number;
+  dealsClosed: number;
+  userGrowth: DailyCount[];
+  activeUsers: DailyCount[];
+  creatorPosts: DailyCount[];
+  conversationStarts: DailyCount[];
+  funnel: GrowthFunnelMetric[];
+  deviceTypes: NamedCount[];
+  operatingSystems: NamedCount[];
+  browsers: NamedCount[];
+}
+
 export interface AdminCreatorSummary {
   creator: AdminUser;
   postCount: number;

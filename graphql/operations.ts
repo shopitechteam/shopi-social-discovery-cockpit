@@ -5,6 +5,7 @@ import type {
   AdminAnalytics,
   AdminContent,
   AdminDashboardStats,
+  AdminGrowthAnalytics,
   AdminUser,
   AuthPayload,
   Category,
@@ -256,6 +257,64 @@ export const ADMIN_ANALYTICS: TypedDocumentNode<
         totalComments
         totalShares
         totalEngagement
+      }
+    }
+  }
+`;
+
+export const ADMIN_GROWTH_ANALYTICS: TypedDocumentNode<
+  { adminGrowthAnalytics: AdminGrowthAnalytics },
+  { days?: number }
+> = gql`
+  query AdminGrowthAnalytics($days: Int) {
+    adminGrowthAnalytics(days: $days) {
+      from
+      to
+      trackedSessions
+      repeatActiveUsers
+      creatorCount
+      activeCreators
+      pendingApprovalPosts
+      totalViews
+      totalSaves
+      totalProductClicks
+      conversationsStarted
+      dealsClosed
+      userGrowth {
+        date
+        count
+      }
+      activeUsers {
+        date
+        count
+      }
+      creatorPosts {
+        date
+        count
+      }
+      conversationStarts {
+        date
+        count
+      }
+      funnel {
+        key
+        label
+        count
+      }
+      deviceTypes {
+        key
+        label
+        count
+      }
+      operatingSystems {
+        key
+        label
+        count
+      }
+      browsers {
+        key
+        label
+        count
       }
     }
   }
@@ -558,21 +617,40 @@ export const ADMIN_CREATOR_DETAIL: TypedDocumentNode<
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
+const CATEGORY_FIELDS = gql`
+  fragment CategoryFields on Category {
+    id
+    name
+    slug
+    description
+    icon
+    parentId
+    depth
+    sortOrder
+    isActive
+    contentCount
+  }
+`;
+
 export const CATEGORIES: TypedDocumentNode<{ categories: Category[] }, Record<string, never>> = gql`
   query Categories {
     categories {
-      id
-      name
-      slug
-      description
-      icon
-      parentId
-      depth
-      sortOrder
-      isActive
-      contentCount
+      ...CategoryFields
     }
   }
+  ${CATEGORY_FIELDS}
+`;
+
+export const ADMIN_CATEGORIES: TypedDocumentNode<
+  { adminCategories: Category[] },
+  Record<string, never>
+> = gql`
+  query AdminCategories {
+    adminCategories {
+      ...CategoryFields
+    }
+  }
+  ${CATEGORY_FIELDS}
 `;
 
 export const CREATE_CATEGORY: TypedDocumentNode<
@@ -590,16 +668,50 @@ export const CREATE_CATEGORY: TypedDocumentNode<
 > = gql`
   mutation CreateCategory($input: CreateCategoryInput!) {
     createCategory(input: $input) {
-      id
-      name
-      slug
-      description
-      icon
-      parentId
-      depth
-      sortOrder
-      isActive
-      contentCount
+      ...CategoryFields
     }
+  }
+  ${CATEGORY_FIELDS}
+`;
+
+export const UPDATE_CATEGORY: TypedDocumentNode<
+  { updateCategory: Category },
+  {
+    id: string;
+    input: {
+      name?: string;
+      slug?: string;
+      description?: string;
+      icon?: string;
+      sortOrder?: number;
+    };
+  }
+> = gql`
+  mutation UpdateCategory($id: String!, $input: UpdateCategoryInput!) {
+    updateCategory(id: $id, input: $input) {
+      ...CategoryFields
+    }
+  }
+  ${CATEGORY_FIELDS}
+`;
+
+export const SET_CATEGORY_ACTIVE: TypedDocumentNode<
+  { setCategoryActive: Category },
+  { id: string; active: boolean }
+> = gql`
+  mutation SetCategoryActive($id: String!, $active: Boolean!) {
+    setCategoryActive(id: $id, active: $active) {
+      ...CategoryFields
+    }
+  }
+  ${CATEGORY_FIELDS}
+`;
+
+export const DELETE_CATEGORY: TypedDocumentNode<
+  { deleteCategory: boolean },
+  { id: string }
+> = gql`
+  mutation DeleteCategory($id: String!) {
+    deleteCategory(id: $id)
   }
 `;

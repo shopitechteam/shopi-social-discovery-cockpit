@@ -1,10 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { toast } from "sonner";
-import { FolderPlus, CornerDownRight } from "lucide-react";
-import { CATEGORIES, CREATE_CATEGORY } from "@/graphql/operations";
+import {
+  FolderPlus,
+  CornerDownRight,
+  MoreHorizontal,
+  PencilLine,
+  Trash2,
+  EyeOff,
+  Eye,
+} from "lucide-react";
+import {
+  ADMIN_CATEGORIES,
+  CREATE_CATEGORY,
+  DELETE_CATEGORY,
+  SET_CATEGORY_ACTIVE,
+  UPDATE_CATEGORY,
+} from "@/graphql/operations";
 import type { Category } from "@/graphql/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -67,19 +82,67 @@ function orderAsTree(categories: Category[]): Category[] {
 }
 
 export default function CategoriesPage() {
-  const { data, loading } = useQuery(CATEGORIES);
+  const { data, loading, refetch } = useQuery(ADMIN_CATEGORIES, {
+    fetchPolicy: "cache-and-network",
+  });
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [openActionCategoryId, setOpenActionCategoryId] = useState<string | null>(null);
+  const actionMenuRef = useRef<HTMLDivElement | null>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [parentId, setParentId] = useState("");
   const [description, setDescription] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editSlug, setEditSlug] = useState("");
+  const [editSlugTouched, setEditSlugTouched] = useState(false);
+  const [editDescription, setEditDescription] = useState("");
+  const [editIcon, setEditIcon] = useState("");
+  const [editSortOrder, setEditSortOrder] = useState("0");
 
   const [createCategory, { loading: creating }] = useMutation(CREATE_CATEGORY, {
-    refetchQueries: ["Categories"],
+    refetchQueries: ["AdminCategories"],
   });
+  const [updateCategory, { loading: updating }] = useMutation(UPDATE_CATEGORY);
+  const [setCategoryActive, { loading: updatingStatus }] = useMutation(SET_CATEGORY_ACTIVE);
+  const [deleteCategory, { loading: deleting }] = useMutation(DELETE_CATEGORY);
 
-  const categories = useMemo(() => orderAsTree(data?.categories ?? []), [data]);
+  const categories = useMemo(() => orderAsTree(data?.adminCategories ?? []), [data]);
+
+  useEffect(() => {
+    if (!openActionCategoryId) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!actionMenuRef.current?.contains(event.target as Node)) {
+        setOpenActionCategoryId(null);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpenActionCategoryId(null);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [openActionCategoryId]);
+
+  useEffect(() => {
+    if (!selectedCategory || !editOpen) return;
+    setEditName(selectedCategory.name);
+    setEditSlug(selectedCategory.slug);
+    setEditSlugTouched(false);
+    setEditDescription(selectedCategory.description ?? "");
+    setEditIcon(selectedCategory.icon ?? "");
+    setEditSortOrder(String(selectedCategory.sortOrder));
+  }, [selectedCategory, editOpen]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +158,7 @@ export default function CategoriesPage() {
         },
       });
       toast.success(`Category “${name.trim()}” created`);
+      await refetch();
       setCreateOpen(false);
       setName("");
       setSlug("");
@@ -103,6 +167,66 @@ export default function CategoriesPage() {
       setDescription("");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create category");
+    }
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedCategory) return;
+    try {
+      await updateCategory({
+        variables: {
+          id: selectedCategory.id,
+          input: {
+            name: editName.trim(),
+            slug: editSlug.trim() || slugify(editName),
+            description: editDescription.trim() || "",
+            icon: editIcon.trim() || "",
+            sortOrder: Number(editSortOrder) || 0,
+          },
+        },
+      });
+      toast.success(`Category “${editName.trim()}” updated`);
+      await refetch();
+      setEditOpen(false);
+      setSelectedCategory(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update category");
+    }
+  }
+
+  async function handleToggleActive() {
+    if (!selectedCategory) return;
+    try {
+      await setCategoryActive({
+        variables: {
+          id: selectedCategory.id,
+          active: !selectedCategory.isActive,
+        },
+      });
+      toast.success(
+        selectedCategory.isActive
+          ? `Category “${selectedCategory.name}” is now inactive`
+          : `Category “${selectedCategory.name}” reactivated`,
+      );
+      await refetch();
+      setStatusOpen(false);
+      setSelectedCategory(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update category status");
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedCategory) return;
+    try {
+      await deleteCategory({ variables: { id: selectedCategory.id } });
+      toast.success(`Category “${selectedCategory.name}” deleted`);
+      await refetch();
+      setDeleteOpen(false);
+      setSelectedCategory(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete category");
     }
   }
 
@@ -138,6 +262,7 @@ export default function CategoriesPage() {
                   <TableHead>Slug</TableHead>
                   <TableHead>Posts</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -161,6 +286,77 @@ export default function CategoriesPage() {
                       ) : (
                         <Badge variant="secondary">Inactive</Badge>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div
+                        className="flex items-center justify-end"
+                        ref={openActionCategoryId === cat.id ? actionMenuRef : null}
+                      >
+                        <div className="relative">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 rounded-full"
+                            onClick={() =>
+                              setOpenActionCategoryId((current) =>
+                                current === cat.id ? null : cat.id,
+                              )
+                            }
+                            aria-label="Category actions"
+                            aria-expanded={openActionCategoryId === cat.id}
+                            aria-haspopup="menu"
+                          >
+                            <MoreHorizontal />
+                          </Button>
+
+                          {openActionCategoryId === cat.id && (
+                            <div
+                              role="menu"
+                              className="absolute right-0 top-10 z-[60] min-w-44 rounded-2xl border border-border bg-elevated p-1.5 shadow-lg"
+                            >
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setOpenActionCategoryId(null);
+                                  setSelectedCategory(cat);
+                                  setEditOpen(true);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-subtle"
+                              >
+                                <PencilLine />
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setOpenActionCategoryId(null);
+                                  setSelectedCategory(cat);
+                                  setStatusOpen(true);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-subtle"
+                              >
+                                {cat.isActive ? <EyeOff /> : <Eye />}
+                                {cat.isActive ? "Make inactive" : "Make active"}
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setOpenActionCategoryId(null);
+                                  setSelectedCategory(cat);
+                                  setDeleteOpen(true);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-error transition-colors hover:bg-error-soft"
+                              >
+                                <Trash2 />
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -238,6 +434,132 @@ export default function CategoriesPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit category</DialogTitle>
+            <DialogDescription>
+              Update the category details shown to admins and used by the taxonomy.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cat-name">Name</Label>
+              <Input
+                id="edit-cat-name"
+                required
+                value={editName}
+                onChange={(e) => {
+                  setEditName(e.target.value);
+                  if (!editSlugTouched) setEditSlug(slugify(e.target.value));
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cat-slug">Slug</Label>
+              <Input
+                id="edit-cat-slug"
+                required
+                value={editSlug}
+                onChange={(e) => {
+                  setEditSlugTouched(true);
+                  setEditSlug(slugify(e.target.value));
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cat-icon">Icon (optional)</Label>
+              <Input
+                id="edit-cat-icon"
+                value={editIcon}
+                onChange={(e) => setEditIcon(e.target.value)}
+                placeholder="e.g. 📱"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cat-sort">Sort order</Label>
+              <Input
+                id="edit-cat-sort"
+                type="number"
+                min={0}
+                value={editSortOrder}
+                onChange={(e) => setEditSortOrder(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cat-desc">Description (optional)</Label>
+              <Textarea
+                id="edit-cat-desc"
+                rows={3}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="ghost" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={updating}>
+                Save changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={statusOpen} onOpenChange={setStatusOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedCategory?.isActive ? "Make category inactive" : "Reactivate category"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedCategory?.isActive
+                ? "This removes the category from creator-facing pickers. Child categories under it will also be marked inactive so sellers do not see a broken subtree."
+                : "This makes the category selectable again for new posts."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setStatusOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant={selectedCategory?.isActive ? "secondary" : "success"}
+              onClick={() => void handleToggleActive()}
+              loading={updatingStatus}
+            >
+              {selectedCategory?.isActive ? "Make inactive" : "Make active"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete category</DialogTitle>
+            <DialogDescription>
+              Delete <span className="font-medium text-foreground">{selectedCategory?.name}</span>{" "}
+              only if it has no child categories and no posts. This is a permanent action.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleDelete()}
+              loading={deleting}
+            >
+              Delete category
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
