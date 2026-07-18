@@ -5,6 +5,7 @@ import { useMutation } from "@apollo/client/react";
 import { toast } from "sonner";
 import {
   ADMIN_UPDATE_USER_ROLES,
+  ADMIN_SET_USER_VERIFIED,
   ADMIN_SET_USER_SUSPENDED,
   ADMIN_CREATE_ACCOUNT,
 } from "@/graphql/operations";
@@ -205,6 +206,71 @@ export function SuspendDialog({
             loading={loading}
           >
             {suspending ? "Suspend account" : "Reinstate account"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Verify / unverify ────────────────────────────────────────────────────────
+
+export function VerifyDialog({
+  user,
+  open,
+  onOpenChange,
+}: {
+  user: AdminUser | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [setVerified, { loading }] = useMutation(ADMIN_SET_USER_VERIFIED, {
+    refetchQueries: REFETCH,
+  });
+
+  if (!user) return null;
+  const verifying = !user.isVerified;
+  const userId = user.id;
+  const userLabel = displayName(user);
+
+  async function handleConfirm() {
+    try {
+      await setVerified({
+        variables: {
+          userId,
+          verified: verifying,
+        },
+      });
+      toast.success(verifying ? "User verified" : "Verification removed");
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(errMessage(err));
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {verifying ? "Verify" : "Remove verification from"} {userLabel}
+          </DialogTitle>
+          <DialogDescription>
+            {verifying
+              ? "This will mark the account as trusted and show the verified badge anywhere the user state is rendered."
+              : "This removes the trust badge from the user account."}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant={verifying ? "success" : "outline"}
+            onClick={handleConfirm}
+            loading={loading}
+          >
+            {verifying ? "Verify user" : "Remove badge"}
           </Button>
         </DialogFooter>
       </DialogContent>

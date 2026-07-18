@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
-import { Search, UserPlus, ShieldCheck, UserCog, Ban, Undo2 } from "lucide-react";
+import { Search, UserPlus, ShieldCheck, UserCog, Ban, Undo2, BadgeCheck } from "lucide-react";
 import { ADMIN_USERS } from "@/graphql/operations";
 import { UserRole, type AdminUser } from "@/graphql/types";
 import { formatDate, formatRelative, displayName } from "@/lib/format";
@@ -24,7 +24,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/shared/pagination";
-import { RolesDialog, SuspendDialog, CreateStaffDialog } from "@/components/users/user-dialogs";
+import {
+  RolesDialog,
+  SuspendDialog,
+  VerifyDialog,
+  CreateStaffDialog,
+} from "@/components/users/user-dialogs";
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 350;
@@ -57,6 +62,8 @@ export default function UsersPage() {
 
   const [rolesUser, setRolesUser] = useState<AdminUser | null>(null);
   const [rolesOpen, setRolesOpen] = useState(false);
+  const [verifyUser, setVerifyUser] = useState<AdminUser | null>(null);
+  const [verifyOpen, setVerifyOpen] = useState(false);
   const [suspendUser, setSuspendUser] = useState<AdminUser | null>(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -81,6 +88,10 @@ export default function UsersPage() {
     () =>
       suspendUser ? (users.find((user) => user.id === suspendUser.id) ?? suspendUser) : null,
     [suspendUser, users],
+  );
+  const verifyUserFresh = useMemo(
+    () => (verifyUser ? (users.find((user) => user.id === verifyUser.id) ?? verifyUser) : null),
+    [verifyUser, users],
   );
 
   useEffect(() => {
@@ -242,6 +253,17 @@ export default function UsersPage() {
                           </Button>
                           <Button
                             size="sm"
+                            variant={user.isVerified ? "success" : "outline"}
+                            onClick={() => {
+                              setVerifyUser(user);
+                              setVerifyOpen(true);
+                            }}
+                          >
+                            <BadgeCheck />
+                            {user.isVerified ? "Verified" : "Verify"}
+                          </Button>
+                          <Button
+                            size="sm"
                             variant={user.isSuspended ? "success" : "ghost"}
                             className={
                               user.isSuspended ? undefined : "text-error hover:bg-error-soft"
@@ -283,6 +305,7 @@ export default function UsersPage() {
       {meta && <Pagination meta={meta} onPageChange={setPage} />}
 
       <RolesDialog user={rolesUserFresh} open={rolesOpen} onOpenChange={setRolesOpen} />
+      <VerifyDialog user={verifyUserFresh} open={verifyOpen} onOpenChange={setVerifyOpen} />
       <SuspendDialog user={suspendUserFresh} open={suspendOpen} onOpenChange={setSuspendOpen} />
       <CreateStaffDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>

@@ -31,6 +31,14 @@ export enum ContentSource {
   TIKTOK_EMBED = "TIKTOK_EMBED",
 }
 
+export enum AdminCreatorSort {
+  ENGAGEMENT = "ENGAGEMENT",
+  SAVES = "SAVES",
+  VIEWS = "VIEWS",
+  POSTS = "POSTS",
+  LAST_POSTED = "LAST_POSTED",
+}
+
 export enum MediaProcessingStatus {
   PENDING = "PENDING",
   PROCESSING = "PROCESSING",
@@ -248,6 +256,41 @@ export interface AdminAnalytics {
   topCategories: NamedCount[];
   topCounties: NamedCount[];
   topCreators: TopCreatorStat[];
+}
+
+export interface AdminCreatorSummary {
+  creator: AdminUser;
+  postCount: number;
+  activePostCount: number;
+  pendingPostCount: number;
+  processingPostCount: number;
+  rejectedPostCount: number;
+  removedPostCount: number;
+  totalViews: number;
+  totalSaves: number;
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalEngagement: number;
+  averageViewsPerPost: number;
+  averageSavesPerPost: number;
+  saveRatePercent: number;
+  lastPostedAt?: string | null;
+}
+
+export interface PaginatedCreators {
+  data: AdminCreatorSummary[];
+  meta: PaginationMeta;
+}
+
+export interface AdminCreatorDetail {
+  creator: AdminUser;
+  summary: AdminCreatorSummary;
+  statusBreakdown: NamedCount[];
+  postActivity: DailyCount[];
+  engagementByDay: DailyEngagement[];
+  recentPosts: AdminContent[];
+  topPosts: AdminContent[];
 }
 
 // ── Categories ───────────────────────────────────────────────────────────────

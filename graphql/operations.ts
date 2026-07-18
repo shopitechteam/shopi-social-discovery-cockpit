@@ -1,5 +1,7 @@
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import type {
+  AdminCreatorDetail,
+  AdminCreatorSort,
   AdminAnalytics,
   AdminContent,
   AdminDashboardStats,
@@ -8,6 +10,7 @@ import type {
   Category,
   ContentStatus,
   PaginatedContent,
+  PaginatedCreators,
   PaginatedUsers,
   UserRole,
 } from "./types";
@@ -411,6 +414,18 @@ export const ADMIN_UPDATE_USER_ROLES: TypedDocumentNode<
   ${ADMIN_USER_FIELDS}
 `;
 
+export const ADMIN_SET_USER_VERIFIED: TypedDocumentNode<
+  { adminSetUserVerified: AdminUser },
+  { userId: string; verified: boolean }
+> = gql`
+  mutation AdminSetUserVerified($userId: String!, $verified: Boolean!) {
+    adminSetUserVerified(userId: $userId, verified: $verified) {
+      ...AdminUserFields
+    }
+  }
+  ${ADMIN_USER_FIELDS}
+`;
+
 export const ADMIN_SET_USER_SUSPENDED: TypedDocumentNode<
   { adminSetUserSuspended: AdminUser },
   { userId: string; suspended: boolean; reason?: string | null }
@@ -421,6 +436,124 @@ export const ADMIN_SET_USER_SUSPENDED: TypedDocumentNode<
     }
   }
   ${ADMIN_USER_FIELDS}
+`;
+
+export const ADMIN_CREATORS: TypedDocumentNode<
+  { adminCreators: PaginatedCreators },
+  {
+    page?: number;
+    limit?: number;
+    search?: string | null;
+    suspended?: boolean | null;
+    sort?: AdminCreatorSort | null;
+  }
+> = gql`
+  query AdminCreators(
+    $page: Int
+    $limit: Int
+    $search: String
+    $suspended: Boolean
+    $sort: AdminCreatorSort
+  ) {
+    adminCreators(
+      page: $page
+      limit: $limit
+      search: $search
+      suspended: $suspended
+      sort: $sort
+    ) {
+      data {
+        creator {
+          ...AdminUserFields
+        }
+        postCount
+        activePostCount
+        pendingPostCount
+        processingPostCount
+        rejectedPostCount
+        removedPostCount
+        totalViews
+        totalSaves
+        totalLikes
+        totalComments
+        totalShares
+        totalEngagement
+        averageViewsPerPost
+        averageSavesPerPost
+        saveRatePercent
+        lastPostedAt
+      }
+      meta {
+        page
+        limit
+        total
+        totalPages
+        hasNextPage
+        hasPrevPage
+      }
+    }
+  }
+  ${ADMIN_USER_FIELDS}
+`;
+
+export const ADMIN_CREATOR_DETAIL: TypedDocumentNode<
+  { adminCreatorDetail: AdminCreatorDetail },
+  { creatorId: string; days?: number }
+> = gql`
+  query AdminCreatorDetail($creatorId: String!, $days: Int) {
+    adminCreatorDetail(creatorId: $creatorId, days: $days) {
+      creator {
+        ...AdminUserFields
+      }
+      summary {
+        creator {
+          ...AdminUserFields
+        }
+        postCount
+        activePostCount
+        pendingPostCount
+        processingPostCount
+        rejectedPostCount
+        removedPostCount
+        totalViews
+        totalSaves
+        totalLikes
+        totalComments
+        totalShares
+        totalEngagement
+        averageViewsPerPost
+        averageSavesPerPost
+        saveRatePercent
+        lastPostedAt
+      }
+      statusBreakdown {
+        key
+        label
+        count
+      }
+      postActivity {
+        date
+        count
+      }
+      engagementByDay {
+        date
+        views
+        likes
+        comments
+        shares
+        saves
+        productClicks
+      }
+      recentPosts {
+        ...AdminContentFields
+      }
+      topPosts {
+        ...AdminContentFields
+      }
+    }
+  }
+  ${ADMIN_USER_FIELDS}
+  ${ADMIN_CONTENT_FIELDS}
 `;
 
 // ── Categories ───────────────────────────────────────────────────────────────
