@@ -29,8 +29,14 @@ type HealthResponse = {
   services: {
     mongodb: string;
     redis: string;
+    worker: string;
     mailgun: string;
     africastalking: string;
+  };
+  worker?: {
+    apiWorkersEnabled: boolean;
+    serviceOnline: boolean;
+    lastHeartbeatAt?: string | null;
   };
   timestamp: string;
 };
@@ -214,10 +220,14 @@ export default function SystemPage() {
             />
             <StatCard
               icon={Workflow}
-              label="Processing backlog"
-              value={formatNumber(overview.processingContent)}
-              hint="Posts still in media processing or publish pipeline."
-              tone={overview.processingContent > 0 ? "warning" : "success"}
+              label="Worker service"
+              value={overview.workerServiceOnline ? "Online" : "Offline"}
+              hint={
+                overview.workerLastHeartbeatAt
+                  ? `Last heartbeat ${formatRelative(overview.workerLastHeartbeatAt)}.`
+                  : "No recent worker heartbeat seen."
+              }
+              tone={overview.workerServiceOnline ? "success" : "warning"}
             />
             <StatCard
               icon={AlertTriangle}
@@ -249,17 +259,17 @@ export default function SystemPage() {
             />
             <StatCard
               icon={HardDrive}
+              label="Processing backlog"
+              value={formatNumber(overview.processingContent)}
+              hint="Posts still in media processing or publish pipeline."
+              tone={overview.processingContent > 0 ? "warning" : "success"}
+            />
+            <StatCard
+              icon={CheckCircle2}
               label="Scheduled publishes"
               value={formatNumber(overview.scheduledPublishes)}
               hint={`${formatNumber(overview.failedSchedules)} failed schedules currently recorded.`}
               tone={overview.failedSchedules > 0 ? "warning" : "default"}
-            />
-            <StatCard
-              icon={CheckCircle2}
-              label="Integration alerts"
-              value={formatNumber(failingIntegrations.length)}
-              hint="Configured services and infrastructure checks currently failing."
-              tone={failingIntegrations.length > 0 ? "warning" : "success"}
             />
           </div>
 
@@ -286,6 +296,9 @@ export default function SystemPage() {
                           <p className="text-sm font-semibold text-foreground">API status</p>
                           <p className="mt-1 text-xs text-muted">
                             Uptime {health.uptime} · memory {health.memory}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            API workers {health.worker?.apiWorkersEnabled ? "enabled here" : "disabled here"} · background worker service {health.worker?.serviceOnline ? "online" : "offline"}
                           </p>
                         </div>
                         <Badge variant={health.status === "ok" ? "success" : "warning"}>
@@ -347,6 +360,12 @@ export default function SystemPage() {
                       </Badge>
                     </div>
                   ))}
+                </div>
+                <div className="mt-4 rounded-2xl border border-border bg-surface px-4 py-3">
+                  <p className="text-sm font-medium text-foreground">Deployment note</p>
+                  <p className="mt-1 text-xs text-muted">
+                    This API process reports <code>START_WORKERS={overview.apiWorkersEnabled ? "true" : "false"}</code>. That is separate from the real background worker service heartbeat above, so split deployments are now shown correctly.
+                  </p>
                 </div>
               </CardContent>
             </Card>

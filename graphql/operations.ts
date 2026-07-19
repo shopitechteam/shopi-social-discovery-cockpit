@@ -1,16 +1,20 @@
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import type {
+  AdminConversationAnalytics,
+  AdminConversationQueue,
   AdminCreatorDetail,
   AdminCreatorSort,
   AdminAnalytics,
   AdminContent,
   AdminDashboardStats,
   AdminGrowthAnalytics,
+  AdminLocationAnalytics,
   AdminSystemOverview,
   AdminUser,
   AuthPayload,
   Category,
   ContentStatus,
+  PaginatedAdminConversations,
   PaginatedContent,
   PaginatedCreators,
   PaginatedUsers,
@@ -321,6 +325,188 @@ export const ADMIN_GROWTH_ANALYTICS: TypedDocumentNode<
   }
 `;
 
+export const ADMIN_LOCATION_ANALYTICS: TypedDocumentNode<
+  { adminLocationAnalytics: AdminLocationAnalytics },
+  { days?: number }
+> = gql`
+  query AdminLocationAnalytics($days: Int) {
+    adminLocationAnalytics(days: $days) {
+      from
+      to
+      countiesCovered
+      activeCounties
+      countiesWithoutSupply
+      creatorsRepresented
+      activePosts
+      pendingApprovalPosts
+      postsInWindow
+      totalViews
+      totalSaves
+      postGrowth {
+        date
+        count
+      }
+      countyActivationByDay {
+        date
+        count
+      }
+      statusMix {
+        key
+        label
+        count
+      }
+      topCategories {
+        key
+        label
+        count
+      }
+      topCounties {
+        key
+        label
+        count
+      }
+      countyPerformance {
+        countyId
+        countyName
+        countySlug
+        countyCode
+        totalPosts
+        postsInWindow
+        activePosts
+        pendingPosts
+        processingPosts
+        rejectedPosts
+        removedPosts
+        totalViews
+        totalSaves
+        totalLikes
+        totalComments
+        totalShares
+        totalEngagement
+        creatorCount
+        activeCreatorCount
+        averageViewsPerPost
+        averageSavesPerPost
+        saveRatePercent
+        topCategory
+        latestPostAt
+      }
+    }
+  }
+`;
+
+export const ADMIN_CONVERSATION_ANALYTICS: TypedDocumentNode<
+  { adminConversationAnalytics: AdminConversationAnalytics },
+  { days?: number }
+> = gql`
+  query AdminConversationAnalytics($days: Int) {
+    adminConversationAnalytics(days: $days) {
+      from
+      to
+      totalConversations
+      startedInWindow
+      openConversations
+      closedDeals
+      reportedConversations
+      sellerNeedsReply
+      buyerNeedsReply
+      totalMessages
+      averageMessagesPerConversation
+      staleConversations
+      sellerReplyRate1hPercent
+      sellerReplyRate24hPercent
+      medianSellerFirstResponseMinutes
+      conversationStarts {
+        date
+        count
+      }
+      dealsClosedByDay {
+        date
+        count
+      }
+      queueMix {
+        key
+        label
+        count
+      }
+      reportReasons {
+        key
+        label
+        count
+      }
+      topSellers {
+        key
+        label
+        count
+      }
+    }
+  }
+`;
+
+export const ADMIN_CONVERSATIONS: TypedDocumentNode<
+  { adminConversations: PaginatedAdminConversations },
+  { page?: number; limit?: number; queue?: AdminConversationQueue; search?: string | null }
+> = gql`
+  query AdminConversations($page: Int, $limit: Int, $queue: AdminConversationQueue, $search: String) {
+    adminConversations(page: $page, limit: $limit, queue: $queue, search: $search) {
+      data {
+        conversation {
+          id
+          contentId
+          sellerId
+          buyerId
+          lastMessageId
+          lastMessageText
+          lastMessageType
+          lastMessageSenderId
+          lastMessageAt
+          sellerUnreadCount
+          buyerUnreadCount
+          messageCount
+          firstMessageAt
+          dealClosedAt
+          dealClosedByUserId
+          createdAt
+          updatedAt
+        }
+        content {
+          ...AdminContentFields
+        }
+        seller {
+          ...AdminUserFields
+        }
+        buyer {
+          ...AdminUserFields
+        }
+        reporter {
+          ...AdminUserFields
+        }
+        reportedUser {
+          ...AdminUserFields
+        }
+        isReported
+        reportReason
+        reportDetails
+        reportedAt
+        reportCount
+        needsSellerReply
+        needsBuyerReply
+        dealClosed
+      }
+      meta {
+        page
+        limit
+        total
+        totalPages
+        hasNextPage
+        hasPrevPage
+      }
+    }
+  }
+  ${ADMIN_CONTENT_FIELDS}
+  ${ADMIN_USER_FIELDS}
+`;
+
 export const ADMIN_SYSTEM_OVERVIEW: TypedDocumentNode<
   { adminSystemOverview: AdminSystemOverview },
   Record<string, never>
@@ -328,7 +514,9 @@ export const ADMIN_SYSTEM_OVERVIEW: TypedDocumentNode<
   query AdminSystemOverview {
     adminSystemOverview {
       timestamp
-      workersEnabled
+      apiWorkersEnabled
+      workerServiceOnline
+      workerLastHeartbeatAt
       redisAvailable
       queuesAvailable
       totalAdmins

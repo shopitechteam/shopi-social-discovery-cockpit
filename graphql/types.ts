@@ -287,6 +287,124 @@ export interface AdminGrowthAnalytics {
   browsers: NamedCount[];
 }
 
+export interface AdminCountyPerformance {
+  countyId: string;
+  countyName: string;
+  countySlug: string;
+  countyCode: number;
+  totalPosts: number;
+  postsInWindow: number;
+  activePosts: number;
+  pendingPosts: number;
+  processingPosts: number;
+  rejectedPosts: number;
+  removedPosts: number;
+  totalViews: number;
+  totalSaves: number;
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalEngagement: number;
+  creatorCount: number;
+  activeCreatorCount: number;
+  averageViewsPerPost: number;
+  averageSavesPerPost: number;
+  saveRatePercent: number;
+  topCategory?: string | null;
+  latestPostAt?: string | null;
+}
+
+export interface AdminLocationAnalytics {
+  from: string;
+  to: string;
+  countiesCovered: number;
+  activeCounties: number;
+  countiesWithoutSupply: number;
+  creatorsRepresented: number;
+  activePosts: number;
+  pendingApprovalPosts: number;
+  postsInWindow: number;
+  totalViews: number;
+  totalSaves: number;
+  postGrowth: DailyCount[];
+  countyActivationByDay: DailyCount[];
+  statusMix: NamedCount[];
+  topCategories: NamedCount[];
+  topCounties: NamedCount[];
+  countyPerformance: AdminCountyPerformance[];
+}
+
+export type AdminConversationQueue =
+  | "ALL"
+  | "REPORTED"
+  | "SELLER_NEEDS_REPLY"
+  | "BUYER_NEEDS_REPLY"
+  | "CLOSED_DEALS"
+  | "OPEN_DEALS";
+
+export interface AdminConversationSummary {
+  conversation: {
+    id: string;
+    contentId: string;
+    sellerId: string;
+    buyerId: string;
+    lastMessageId?: string | null;
+    lastMessageText?: string | null;
+    lastMessageType?: string | null;
+    lastMessageSenderId?: string | null;
+    lastMessageAt?: string | null;
+    sellerUnreadCount: number;
+    buyerUnreadCount: number;
+    messageCount: number;
+    firstMessageAt?: string | null;
+    dealClosedAt?: string | null;
+    dealClosedByUserId?: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  content?: AdminContent | null;
+  seller?: AdminUser | null;
+  buyer?: AdminUser | null;
+  reporter?: AdminUser | null;
+  reportedUser?: AdminUser | null;
+  isReported: boolean;
+  reportReason?: string | null;
+  reportDetails?: string | null;
+  reportedAt?: string | null;
+  reportCount: number;
+  needsSellerReply: boolean;
+  needsBuyerReply: boolean;
+  dealClosed: boolean;
+}
+
+export interface PaginatedAdminConversations {
+  data: AdminConversationSummary[];
+  meta: PaginationMeta;
+}
+
+export interface AdminConversationAnalytics {
+  from: string;
+  to: string;
+  totalConversations: number;
+  startedInWindow: number;
+  openConversations: number;
+  closedDeals: number;
+  reportedConversations: number;
+  sellerNeedsReply: number;
+  buyerNeedsReply: number;
+  totalMessages: number;
+  averageMessagesPerConversation: number;
+  staleConversations: number;
+  sellerReplyRate1hPercent: number;
+  sellerReplyRate24hPercent: number;
+  medianSellerFirstResponseMinutes: number;
+  conversationStarts: DailyCount[];
+  dealsClosedByDay: DailyCount[];
+  queueMix: NamedCount[];
+  reportReasons: NamedCount[];
+  topSellers: NamedCount[];
+}
+
 export interface AdminSystemFlag {
   key: string;
   label: string;
@@ -296,7 +414,9 @@ export interface AdminSystemFlag {
 
 export interface AdminSystemOverview {
   timestamp: string;
-  workersEnabled: boolean;
+  apiWorkersEnabled: boolean;
+  workerServiceOnline: boolean;
+  workerLastHeartbeatAt?: string | null;
   redisAvailable: boolean;
   queuesAvailable: boolean;
   totalAdmins: number;
