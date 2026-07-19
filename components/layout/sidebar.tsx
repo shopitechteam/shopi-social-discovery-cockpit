@@ -7,7 +7,6 @@ import {
   Clapperboard,
   Users,
   FolderTree,
-  ShieldCheck,
   Siren,
   Trophy,
   ChartNoAxesCombined,
@@ -36,9 +35,13 @@ export function Sidebar() {
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-elevated md:flex">
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="flex size-9 items-center justify-center rounded-full bg-primary">
-          <ShieldCheck className="size-5 text-on-brand" />
-        </div>
+        <img
+          src="/icon.svg"
+          alt="Shopi"
+          width={36}
+          height={36}
+          className="size-9 shrink-0"
+        />
         <div>
           <p className="text-sm font-bold leading-tight text-foreground">Shopi Admin</p>
           <p className="text-xs text-muted">Platform control</p>
