@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   AlertTriangle,
@@ -169,10 +169,6 @@ export default function SystemPage() {
   }
 
   const overview = data?.adminSystemOverview;
-  const failingIntegrations = useMemo(
-    () => overview?.integrations.filter((item) => !item.healthy) ?? [],
-    [overview],
-  );
 
   return (
     <div className="space-y-6">
