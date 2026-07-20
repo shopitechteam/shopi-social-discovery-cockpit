@@ -47,6 +47,11 @@ function createClient() {
       const message = e.message?.toLowerCase() ?? "";
 
       return (
+        // The API emits UNAUTHORIZED (see AppError/formatGraphQLError); the
+        // other codes cover Apollo-standard and gateway-shaped errors. Without
+        // UNAUTHORIZED here we'd be relying purely on the message string below,
+        // which breaks the moment a throw site changes its wording.
+        code === "UNAUTHORIZED" ||
         code === "UNAUTHENTICATED" ||
         code === "FORBIDDEN" ||
         message.includes("unauthorized") ||
