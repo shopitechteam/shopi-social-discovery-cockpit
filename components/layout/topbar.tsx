@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
 import { LogOut, Moon, Sun } from "lucide-react";
@@ -10,6 +11,14 @@ import { useThemeStore } from "@/stores/theme";
 import { displayName } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { MobileNav } from "@/components/layout/mobile-nav";
 
 const TITLES: Record<string, string> = {
@@ -34,7 +43,8 @@ export function Topbar() {
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggle);
 
-  const [logout] = useMutation(LOGOUT);
+  const [logout, { loading: loggingOut }] = useMutation(LOGOUT);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function handleLogout() {
     try {
@@ -42,6 +52,7 @@ export function Topbar() {
     } catch {
       // Best-effort server-side revoke; local sign-out always proceeds.
     } finally {
+      setConfirmOpen(false);
       clearAuth();
       toast.success("Signed out");
       router.replace("/login");
@@ -72,10 +83,40 @@ export function Topbar() {
           </span>
         </div>
 
-        <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Sign out">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setConfirmOpen(true)}
+          aria-label="Sign out"
+        >
           <LogOut />
         </Button>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign out</DialogTitle>
+            <DialogDescription>
+              You&apos;ll be returned to the login screen and any unsaved changes on this page will
+              be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void handleLogout()}
+              loading={loggingOut}
+            >
+              Sign out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }
