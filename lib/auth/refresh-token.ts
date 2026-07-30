@@ -59,7 +59,18 @@ async function doRefresh(refreshToken: string): Promise<string | null> {
       errors?: unknown[];
     };
 
-    if (json.errors || !json.data?.refreshToken) return null;
+    if (json.errors || !json.data?.refreshToken) {
+      // The API rotates on every refresh and deletes the token it was given, so
+      // a token that raced another rotation fails here. If the store has since
+      // moved on to a different pair, that other rotation succeeded — hand back
+      // its access token rather than reporting a failure the caller would treat
+      // as "session over".
+      const current = useAuthStore.getState();
+      if (current.refreshToken && current.refreshToken !== refreshToken) {
+        return current.accessToken;
+      }
+      return null;
+    }
 
     const refreshedAuth = json.data.refreshToken;
     const { accessToken } = refreshedAuth;
