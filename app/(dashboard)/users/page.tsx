@@ -15,7 +15,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { ADMIN_USERS } from "@/graphql/operations";
-import { UserRole, type AdminUser } from "@/graphql/types";
+import { AttributionMedium, UserRole, type AdminUser } from "@/graphql/types";
 import { formatDate, formatRelative, displayName } from "@/lib/format";
 import { useAuthStore } from "@/stores/auth";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,35 @@ function providerList(user: AdminUser): string {
   return providers.join(", ") || "—";
 }
 
+/**
+ * Human label for where an account came from.
+ *
+ * Accounts created before attribution shipped carry no record at all, and that
+ * is not the same as "direct" — showing them as direct would silently inflate
+ * the one bucket we can least afford to get wrong.
+ */
+function sourceLabel(user: AdminUser): string {
+  const source = user.attribution?.source;
+  if (!source) return "—";
+  return source;
+}
+
+/** Badge tone per medium, so paid and organic are distinguishable at a glance. */
+function mediumVariant(
+  medium?: AttributionMedium | null,
+): "default" | "secondary" | "accent" | "success" {
+  switch (medium) {
+    case AttributionMedium.PAID:
+      return "default";
+    case AttributionMedium.ORGANIC:
+      return "success";
+    case AttributionMedium.SOCIAL:
+      return "accent";
+    default:
+      return "secondary";
+  }
+}
+
 function resolvedRoles(user: Pick<AdminUser, "roles" | "role">): UserRole[] {
   const set = new Set<UserRole>(user.roles ?? []);
   if (user.role) set.add(user.role);
@@ -69,6 +98,10 @@ export default function UsersPage() {
   const [submittedSearch, setSubmittedSearch] = useState(presetSearch);
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [suspendedFilter, setSuspendedFilter] = useState<string>("");
+  const [mediumFilter, setMediumFilter] = useState<string>("");
+  // Set by clicking a Source cell — the fastest way to answer "who else came
+  // from this source?" without building a separate report screen.
+  const [sourceFilter, setSourceFilter] = useState<string>("");
 
   const [rolesUser, setRolesUser] = useState<AdminUser | null>(null);
   const [rolesOpen, setRolesOpen] = useState(false);
@@ -88,6 +121,8 @@ export default function UsersPage() {
       search: submittedSearch || null,
       role: (roleFilter as UserRole) || null,
       suspended: suspendedFilter === "" ? null : suspendedFilter === "true",
+      source: sourceFilter || null,
+      medium: (mediumFilter as AttributionMedium) || null,
     },
   });
 
@@ -152,6 +187,8 @@ export default function UsersPage() {
         search: submittedSearch || null,
         role: (roleFilter as UserRole) || null,
         suspended: suspendedFilter === "" ? null : suspendedFilter === "true",
+        source: sourceFilter || null,
+        medium: (mediumFilter as AttributionMedium) || null,
       });
     } finally {
       setRefreshing(false);
@@ -198,10 +235,39 @@ export default function UsersPage() {
               <option value="false">Active</option>
               <option value="true">Suspended</option>
             </Select>
+            <Select
+              value={mediumFilter}
+              onChange={(e) => {
+                setMediumFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-36"
+            >
+              <option value="">Any source</option>
+              <option value={AttributionMedium.ORGANIC}>Organic search</option>
+              <option value={AttributionMedium.SOCIAL}>Social</option>
+              <option value={AttributionMedium.PAID}>Paid</option>
+              <option value={AttributionMedium.REFERRAL}>Referral</option>
+              <option value={AttributionMedium.DIRECT}>Direct</option>
+            </Select>
           </div>
         </div>
 
         <div className="flex items-center gap-2 self-start lg:self-auto">
+          {sourceFilter && (
+            <button
+              type="button"
+              onClick={() => {
+                setSourceFilter("");
+                setPage(1);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:text-foreground"
+            >
+              Source: {sourceFilter}
+              <span aria-hidden>×</span>
+              <span className="sr-only">Clear source filter</span>
+            </button>
+          )}
           <Button
             variant="outline"
             onClick={() => void handleRefresh()}
@@ -235,6 +301,7 @@ export default function UsersPage() {
                   <TableHead>User</TableHead>
                   <TableHead>Roles</TableHead>
                   <TableHead>Sign-in</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -278,6 +345,38 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm text-muted">
                         {providerList(user)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {user.attribution ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSourceFilter(user.attribution!.source);
+                              setPage(1);
+                            }}
+                            title={[
+                              user.attribution.campaign &&
+                                `Campaign: ${user.attribution.campaign}`,
+                              user.attribution.landingPath &&
+                                `Landed on: ${user.attribution.landingPath}`,
+                              user.attribution.referrer &&
+                                `Referrer: ${user.attribution.referrer}`,
+                              typeof user.attribution.hoursToSignup === "number" &&
+                                `Signed up ${user.attribution.hoursToSignup}h after first visit`,
+                            ]
+                              .filter(Boolean)
+                              .join("\n") || undefined}
+                            className="cursor-pointer"
+                          >
+                            <Badge variant={mediumVariant(user.attribution.medium)}>
+                              {sourceLabel(user)}
+                            </Badge>
+                          </button>
+                        ) : (
+                          <span className="text-sm text-muted" title="Account predates source tracking">
+                            —
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {user.isSuspended ? (

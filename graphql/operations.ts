@@ -11,6 +11,7 @@ import type {
   AdminLocationAnalytics,
   AdminSystemOverview,
   AdminUser,
+  AttributionMedium,
   AuthPayload,
   Category,
   ContentStatus,
@@ -47,6 +48,14 @@ const ADMIN_USER_FIELDS = gql`
       lastName
       avatar
       bio
+    }
+    attribution {
+      source
+      medium
+      campaign
+      referrer
+      landingPath
+      hoursToSignup
     }
     createdAt
   }
@@ -660,6 +669,8 @@ export const ADMIN_USERS: TypedDocumentNode<
     search?: string | null;
     role?: UserRole | null;
     suspended?: boolean | null;
+    source?: string | null;
+    medium?: AttributionMedium | null;
   }
 > = gql`
   query AdminUsers(
@@ -668,8 +679,18 @@ export const ADMIN_USERS: TypedDocumentNode<
     $search: String
     $role: UserRole
     $suspended: Boolean
+    $source: String
+    $medium: AttributionMedium
   ) {
-    adminUsers(page: $page, limit: $limit, search: $search, role: $role, suspended: $suspended) {
+    adminUsers(
+      page: $page
+      limit: $limit
+      search: $search
+      role: $role
+      suspended: $suspended
+      source: $source
+      medium: $medium
+    ) {
       data {
         ...AdminUserFields
       }

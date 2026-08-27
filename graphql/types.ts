@@ -63,6 +63,30 @@ export interface AuthProviders {
   tiktok: boolean;
 }
 
+export enum AttributionMedium {
+  ORGANIC = "organic",
+  SOCIAL = "social",
+  PAID = "paid",
+  EMAIL = "email",
+  REFERRAL = "referral",
+  DIRECT = "direct",
+  INTERNAL = "internal",
+  UNKNOWN = "unknown",
+}
+
+/** First-touch acquisition data captured when the account was created. */
+export interface UserAttribution {
+  source: string;
+  medium: AttributionMedium;
+  campaign?: string | null;
+  term?: string | null;
+  referrer?: string | null;
+  landingPath?: string | null;
+  firstSeenAt?: string | null;
+  hoursToSignup?: number | null;
+  surface?: string | null;
+}
+
 export interface AdminUser {
   id: string;
   email?: string | null;
@@ -76,6 +100,8 @@ export interface AdminUser {
   profileVisitCount: number;
   authProviders: AuthProviders;
   profile?: UserProfile | null;
+  /** Absent for accounts created before attribution shipped — show "unknown". */
+  attribution?: UserAttribution | null;
   createdAt: string;
 }
 
