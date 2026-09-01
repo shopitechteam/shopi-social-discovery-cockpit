@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
+import { toast } from "sonner";
 import {
   Search,
   UserPlus,
@@ -13,8 +14,10 @@ import {
   BadgeCheck,
   RefreshCw,
   MoreHorizontal,
+  LogIn,
+  Loader2,
 } from "lucide-react";
-import { ADMIN_USERS } from "@/graphql/operations";
+import { ADMIN_CREATE_IMPERSONATION_TOKEN, ADMIN_USERS } from "@/graphql/operations";
 import { AttributionMedium, UserRole, type AdminUser } from "@/graphql/types";
 import { formatDate, formatRelative, displayName } from "@/lib/format";
 import { useAuthStore } from "@/stores/auth";
@@ -43,6 +46,18 @@ import {
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 350;
+
+function errMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "Something went wrong";
+}
+
+function impersonationUrl(token: string): string {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SHOPI_WEB_URL ??
+    process.env.NEXT_PUBLIC_WEB_APP_URL ??
+    "http://localhost:3000";
+  return `${baseUrl.replace(/\/$/, "")}/en/auth/impersonate?token=${encodeURIComponent(token)}`;
+}
 
 function providerList(user: AdminUser): string {
   const providers: string[] = [];
@@ -111,6 +126,7 @@ export default function UsersPage() {
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
   const [openActionUserId, setOpenActionUserId] = useState<string | null>(null);
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -125,6 +141,7 @@ export default function UsersPage() {
       medium: (mediumFilter as AttributionMedium) || null,
     },
   });
+  const [createImpersonationToken] = useMutation(ADMIN_CREATE_IMPERSONATION_TOKEN);
 
   const users = data?.adminUsers.data ?? [];
   const meta = data?.adminUsers.meta;
@@ -192,6 +209,30 @@ export default function UsersPage() {
       });
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  async function handleImpersonate(user: AdminUser) {
+    setImpersonatingUserId(user.id);
+    const popup = window.open("about:blank", "_blank");
+    try {
+      const { data } = await createImpersonationToken({ variables: { userId: user.id } });
+      const token = data?.adminCreateImpersonationToken.token;
+      if (!token) throw new Error("Impersonation token was not returned");
+
+      const url = impersonationUrl(token);
+      if (popup) {
+        popup.opener = null;
+        popup.location.replace(url);
+      } else if (!window.open(url, "_blank", "noopener,noreferrer")) {
+        throw new Error("Popup was blocked. Please allow popups for the admin dashboard.");
+      }
+      toast.success(`Opening ${displayName(user)} as an impersonated session`);
+    } catch (err) {
+      if (popup && !popup.closed) popup.close();
+      toast.error(errMessage(err));
+    } finally {
+      setImpersonatingUserId(null);
     }
   }
 
@@ -311,6 +352,8 @@ export default function UsersPage() {
                 {users.map((user) => {
                   const isMe = user.id === me?.id;
                   const roles = resolvedRoles(user);
+                  const isAdminAccount = roles.includes(UserRole.ADMIN);
+                  const impersonationDisabled = isMe || isAdminAccount || user.isSuspended;
                   return (
                     <TableRow key={user.id}>
                       <TableCell>
@@ -420,6 +463,33 @@ export default function UsersPage() {
                                 role="menu"
                                 className="absolute right-0 top-10 z-[60] min-w-44 rounded-2xl border border-border bg-elevated p-1.5 shadow-lg"
                               >
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  disabled={impersonationDisabled || impersonatingUserId === user.id}
+                                  title={
+                                    isMe
+                                      ? "You are already signed in as this admin"
+                                      : isAdminAccount
+                                        ? "Admin accounts cannot be impersonated"
+                                        : user.isSuspended
+                                          ? "Suspended accounts cannot be impersonated"
+                                          : undefined
+                                  }
+                                  onClick={() => {
+                                    if (impersonationDisabled) return;
+                                    setOpenActionUserId(null);
+                                    void handleImpersonate(user);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-subtle disabled:pointer-events-none disabled:opacity-50"
+                                >
+                                  {impersonatingUserId === user.id ? (
+                                    <Loader2 className="animate-spin" />
+                                  ) : (
+                                    <LogIn />
+                                  )}
+                                  Impersonate
+                                </button>
                                 <button
                                   type="button"
                                   role="menuitem"

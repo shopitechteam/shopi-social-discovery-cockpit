@@ -211,6 +211,12 @@ export interface AuthPayload {
   user: AdminUser;
 }
 
+export interface AdminImpersonationPayload {
+  token: string;
+  expiresAt: string;
+  targetUser: AdminUser;
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface AdminDashboardStats {

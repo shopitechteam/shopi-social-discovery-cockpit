@@ -11,6 +11,7 @@ import type {
   AdminLocationAnalytics,
   AdminSystemOverview,
   AdminUser,
+  AdminImpersonationPayload,
   AttributionMedium,
   AuthPayload,
   Category,
@@ -738,6 +739,22 @@ export const ADMIN_SET_USER_SUSPENDED: TypedDocumentNode<
   mutation AdminSetUserSuspended($userId: String!, $suspended: Boolean!, $reason: String) {
     adminSetUserSuspended(userId: $userId, suspended: $suspended, reason: $reason) {
       ...AdminUserFields
+    }
+  }
+  ${ADMIN_USER_FIELDS}
+`;
+
+export const ADMIN_CREATE_IMPERSONATION_TOKEN: TypedDocumentNode<
+  { adminCreateImpersonationToken: AdminImpersonationPayload },
+  { userId: string }
+> = gql`
+  mutation AdminCreateImpersonationToken($userId: String!) {
+    adminCreateImpersonationToken(userId: $userId) {
+      token
+      expiresAt
+      targetUser {
+        ...AdminUserFields
+      }
     }
   }
   ${ADMIN_USER_FIELDS}
