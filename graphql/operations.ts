@@ -10,7 +10,11 @@ import type {
   AdminGrowthAnalytics,
   AdminLocationAnalytics,
   AdminSystemOverview,
+  AdminContentMediaItemInput,
   AdminUser,
+  AdminUserDeletionSummary,
+  ImageUploadSession,
+  VideoUploadSession,
   AdminImpersonationPayload,
   AttributionMedium,
   AuthPayload,
@@ -742,6 +746,96 @@ export const ADMIN_SET_USER_SUSPENDED: TypedDocumentNode<
     }
   }
   ${ADMIN_USER_FIELDS}
+`;
+
+// ── Media repair ─────────────────────────────────────────────────────────────
+// Admins re-upload through the same MediaAsset mutations creators use, then hand
+// the finished asset ids to adminUpdateContentMedia.
+
+export const REQUEST_IMAGE_UPLOAD: TypedDocumentNode<
+  { requestImageUpload: ImageUploadSession },
+  { mimeType?: string | null }
+> = gql`
+  mutation RequestImageUpload($mimeType: String) {
+    requestImageUpload(mimeType: $mimeType) {
+      uploadUrl
+      tempKey
+      mediaAssetId
+      uploadSessionId
+    }
+  }
+`;
+
+export const REQUEST_VIDEO_UPLOAD: TypedDocumentNode<
+  { requestVideoUpload: VideoUploadSession },
+  { corsOrigin?: string | null }
+> = gql`
+  mutation RequestVideoUpload($corsOrigin: String) {
+    requestVideoUpload(corsOrigin: $corsOrigin) {
+      uploadUrl
+      muxUploadId
+      mediaAssetId
+      uploadSessionId
+    }
+  }
+`;
+
+export const NOTIFY_IMAGE_UPLOADED: TypedDocumentNode<
+  { notifyImageUploaded: { id: string; status: string } },
+  { mediaAssetId: string }
+> = gql`
+  mutation NotifyImageUploaded($mediaAssetId: String!) {
+    notifyImageUploaded(mediaAssetId: $mediaAssetId) {
+      id
+      status
+    }
+  }
+`;
+
+export const NOTIFY_VIDEO_UPLOADED: TypedDocumentNode<
+  { notifyVideoUploaded: { id: string; status: string } },
+  { mediaAssetId: string }
+> = gql`
+  mutation NotifyVideoUploaded($mediaAssetId: String!) {
+    notifyVideoUploaded(mediaAssetId: $mediaAssetId) {
+      id
+      status
+    }
+  }
+`;
+
+export const ADMIN_UPDATE_CONTENT_MEDIA: TypedDocumentNode<
+  { adminUpdateContentMedia: AdminContent },
+  { contentId: string; items: AdminContentMediaItemInput[] }
+> = gql`
+  mutation AdminUpdateContentMedia(
+    $contentId: String!
+    $items: [AdminContentMediaItemInput!]!
+  ) {
+    adminUpdateContentMedia(contentId: $contentId, items: $items) {
+      ...AdminContentFields
+    }
+  }
+  ${ADMIN_CONTENT_FIELDS}
+`;
+
+export const ADMIN_DELETE_USER: TypedDocumentNode<
+  { adminDeleteUser: AdminUserDeletionSummary },
+  { userId: string }
+> = gql`
+  mutation AdminDeleteUser($userId: String!) {
+    adminDeleteUser(userId: $userId) {
+      userId
+      email
+      deletedPosts
+      deletedComments
+      deletedDirectMessages
+      deletedFollows
+      deletedCommunities
+      deletedMediaAssets
+      updatedExternalReferences
+    }
+  }
 `;
 
 export const ADMIN_CREATE_IMPERSONATION_TOKEN: TypedDocumentNode<

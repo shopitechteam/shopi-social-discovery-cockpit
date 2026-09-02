@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { toast } from "sonner";
-import { Check, EyeOff, Eye, Loader2, MoreHorizontal, Trash2, X } from "lucide-react";
+import { Check, EyeOff, Eye, Images, Loader2, MoreHorizontal, Trash2, X } from "lucide-react";
 import {
   APPROVE_CONTENT,
   REJECT_CONTENT,
@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PostMediaDialog } from "./post-media-dialog";
 
 /** Queries to refresh after any moderation action. */
 const REFETCH = ["AdminContent", "AdminDashboardStats", "PendingApprovalContent"];
@@ -34,6 +35,7 @@ export function PostActions({ post }: { post: AdminContent }) {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [removeReason, setRemoveReason] = useState("");
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -193,6 +195,18 @@ export function PostActions({ post }: { post: AdminContent }) {
       loading: togglingLive && canMakeLive,
     },
     {
+      key: "media",
+      label: "Edit media",
+      icon: Images,
+      onSelect: () => {
+        closeMenu();
+        setMediaOpen(true);
+      },
+      // The repair hatch for failed uploads — available in every state, since a
+      // post is often taken down precisely because its media never processed.
+      visible: true,
+    },
+    {
       key: "remove",
       label: "Remove",
       icon: Trash2,
@@ -248,6 +262,9 @@ export function PostActions({ post }: { post: AdminContent }) {
           </div>
         )}
       </div>
+
+      {/* Media repair dialog */}
+      <PostMediaDialog post={post} open={mediaOpen} onOpenChange={setMediaOpen} />
 
       {/* Reject dialog */}
       <Dialog

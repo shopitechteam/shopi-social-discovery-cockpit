@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   LogIn,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { ADMIN_CREATE_IMPERSONATION_TOKEN, ADMIN_USERS } from "@/graphql/operations";
 import { AttributionMedium, UserRole, type AdminUser } from "@/graphql/types";
@@ -42,6 +43,7 @@ import {
   SuspendDialog,
   VerifyDialog,
   CreateStaffDialog,
+  DeleteUserDialog,
 } from "@/components/users/user-dialogs";
 
 const PAGE_SIZE = 20;
@@ -124,6 +126,8 @@ export default function UsersPage() {
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [suspendUser, setSuspendUser] = useState<AdminUser | null>(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
@@ -540,6 +544,28 @@ export default function UsersPage() {
                                   {user.isSuspended ? <Undo2 /> : <Ban />}
                                   {user.isSuspended ? "Reinstate" : "Suspend"}
                                 </button>
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  disabled={isMe || isAdminAccount}
+                                  title={
+                                    isMe
+                                      ? "You cannot delete your own account"
+                                      : isAdminAccount
+                                        ? "Admin accounts cannot be deleted — demote first"
+                                        : undefined
+                                  }
+                                  onClick={() => {
+                                    if (isMe || isAdminAccount) return;
+                                    setOpenActionUserId(null);
+                                    setDeleteUser(user);
+                                    setDeleteOpen(true);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-error transition-colors hover:bg-error-soft disabled:pointer-events-none disabled:opacity-50"
+                                >
+                                  <Trash2 />
+                                  Delete permanently
+                                </button>
                               </div>
                             )}
                           </div>
@@ -559,6 +585,7 @@ export default function UsersPage() {
       <RolesDialog user={rolesUserFresh} open={rolesOpen} onOpenChange={setRolesOpen} />
       <VerifyDialog user={verifyUserFresh} open={verifyOpen} onOpenChange={setVerifyOpen} />
       <SuspendDialog user={suspendUserFresh} open={suspendOpen} onOpenChange={setSuspendOpen} />
+      <DeleteUserDialog user={deleteUser} open={deleteOpen} onOpenChange={setDeleteOpen} />
       <CreateStaffDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );

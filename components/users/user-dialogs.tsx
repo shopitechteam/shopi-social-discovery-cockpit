@@ -8,6 +8,7 @@ import {
   ADMIN_SET_USER_VERIFIED,
   ADMIN_SET_USER_SUSPENDED,
   ADMIN_CREATE_ACCOUNT,
+  ADMIN_DELETE_USER,
 } from "@/graphql/operations";
 import { UserRole, type AdminUser } from "@/graphql/types";
 import { displayName } from "@/lib/format";
@@ -271,6 +272,92 @@ export function VerifyDialog({
             loading={loading}
           >
             {verifying ? "Verify user" : "Remove badge"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Permanent delete ─────────────────────────────────────────────────────────
+
+/**
+ * Hard-delete with cascade. Typing the email is the guard — there is no undo and
+ * the API wipes posts, comments, messages, follows, media records and more.
+ */
+export function DeleteUserDialog({
+  user,
+  open,
+  onOpenChange,
+}: {
+  user: AdminUser | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [confirmation, setConfirmation] = useState("");
+  const [deleteUser, { loading }] = useMutation(ADMIN_DELETE_USER, {
+    refetchQueries: REFETCH,
+  });
+
+  useEffect(() => {
+    if (!open) setConfirmation("");
+  }, [open]);
+
+  if (!user) return null;
+
+  const expected = user.email ?? user.username ?? user.id;
+  const confirmed = confirmation.trim().toLowerCase() === expected.toLowerCase();
+
+  async function handleDelete() {
+    if (!user || !confirmed) return;
+    try {
+      const result = await deleteUser({ variables: { userId: user.id } });
+      const summary = result.data?.adminDeleteUser;
+      toast.success(
+        summary
+          ? `Deleted ${displayName(user)} — ${summary.deletedPosts} posts, ${summary.deletedComments} comments removed`
+          : `Deleted ${displayName(user)}`,
+      );
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(errMessage(err));
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete {displayName(user)}</DialogTitle>
+          <DialogDescription>
+            Permanently removes the account and everything linked to it — posts, comments, likes,
+            messages, follows, communities they created, drafts, media and notifications. This
+            cannot be undone. Suspend instead if you only need to block access.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <Label htmlFor="delete-confirm">
+            Type <span className="font-semibold text-foreground">{expected}</span> to confirm
+          </Label>
+          <Input
+            id="delete-confirm"
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+            autoComplete="off"
+            placeholder={expected}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            loading={loading}
+            disabled={!confirmed}
+          >
+            Delete permanently
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -217,6 +217,43 @@ export interface AdminImpersonationPayload {
   targetUser: AdminUser;
 }
 
+export interface ImageUploadSession {
+  uploadUrl: string;
+  tempKey: string;
+  mediaAssetId: string;
+  uploadSessionId: string;
+}
+
+export interface VideoUploadSession {
+  uploadUrl: string;
+  muxUploadId: string;
+  mediaAssetId: string;
+  uploadSessionId: string;
+}
+
+/**
+ * One slot in a post's replacement media array. Exactly one of `keepIndex` (hold
+ * on to the existing item at that position) or `mediaAssetId` (attach a fresh
+ * upload) is set; array order becomes display order.
+ */
+export interface AdminContentMediaItemInput {
+  keepIndex?: number;
+  mediaAssetId?: string;
+}
+
+/** Counts returned by `adminDeleteUser` — what the cascade actually removed. */
+export interface AdminUserDeletionSummary {
+  userId: string;
+  email?: string | null;
+  deletedPosts: number;
+  deletedComments: number;
+  deletedDirectMessages: number;
+  deletedFollows: number;
+  deletedCommunities: number;
+  deletedMediaAssets: number;
+  updatedExternalReferences: number;
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface AdminDashboardStats {
