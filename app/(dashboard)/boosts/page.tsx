@@ -215,7 +215,9 @@ export default function BoostsPage() {
                         <Badge variant="accent" className="capitalize">
                           {boost.tier}
                         </Badge>
-                        <span className="text-xs text-muted">×{boost.multiplier}</span>
+                        <span className="text-xs text-muted">
+                          ×{boost.multiplier} · {boost.durationDays}d
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>

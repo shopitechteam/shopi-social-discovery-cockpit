@@ -130,6 +130,7 @@ const ADMIN_CONTENT_FIELDS = gql`
       tier
       multiplier
       priority
+      startsAt
       expiresAt
       boostId
     }

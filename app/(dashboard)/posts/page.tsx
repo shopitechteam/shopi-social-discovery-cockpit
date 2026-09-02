@@ -5,7 +5,8 @@ import { useQuery } from "@apollo/client/react";
 import { Search, Flag, RefreshCw } from "lucide-react";
 import { ADMIN_CONTENT, ADMIN_DASHBOARD_STATS } from "@/graphql/operations";
 import { ContentStatus, type AdminContent } from "@/graphql/types";
-import { formatRelative, formatNumber, formatPrice, displayName } from "@/lib/format";
+import { formatDate, formatRelative, formatNumber, formatPrice, displayName } from "@/lib/format";
+import { boostRunLabel } from "@/lib/boost";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -246,9 +247,21 @@ export default function PostsPage() {
                           <Badge variant="secondary">not live</Badge>
                         )}
                         {post.boost?.isBoosted && (
-                          <Badge variant="accent" className="capitalize">
-                            {post.boost.tier} boost ×{post.boost.multiplier}
-                          </Badge>
+                          <div className="flex flex-col items-start gap-0.5">
+                            <Badge variant="accent" className="capitalize">
+                              {post.boost.tier} boost ×{post.boost.multiplier}
+                            </Badge>
+                            <span
+                              className="text-[11px] text-muted"
+                              title={
+                                post.boost.expiresAt
+                                  ? `Ends ${formatDate(post.boost.expiresAt)}`
+                                  : undefined
+                              }
+                            >
+                              {boostRunLabel(post.boost)}
+                            </span>
+                          </div>
                         )}
                       </div>
                     </TableCell>

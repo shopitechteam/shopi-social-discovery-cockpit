@@ -10,6 +10,7 @@ import {
   BOOST_PACKAGES,
 } from "@/graphql/operations";
 import { BoostTier, type AdminContent, type BoostPackage } from "@/graphql/types";
+import { boostDurationDays, boostRunLabel } from "@/lib/boost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,12 +72,15 @@ export function PostBoostDialog({
   const packages: BoostPackage[] = packageData?.boostPackages ?? [];
   const activeBoost = post?.boost?.isBoosted ? post.boost : null;
 
+  // Reopening on a boosted post shows the campaign as it actually stands — the
+  // tier bought and the duration it was bought for — rather than resetting to
+  // the package default, which would silently shorten a custom run on save.
   useEffect(() => {
     if (!open) return;
     setTier(activeBoost?.tier ?? null);
-    setDurationDays("");
+    setDurationDays(activeBoost ? (boostDurationDays(activeBoost)?.toString() ?? "") : "");
     setNote("");
-  }, [open, activeBoost?.tier]);
+  }, [open, activeBoost]);
 
   if (!post) return null;
 
@@ -133,7 +137,7 @@ export function PostBoostDialog({
               <Sparkles className="size-4 text-accent" />
               <span className="font-medium capitalize text-foreground">{activeBoost.tier}</span>
               <span className="text-muted">
-                ×{activeBoost.multiplier} · ends{" "}
+                ×{activeBoost.multiplier} · {boostRunLabel(activeBoost) ?? "running"} · ends{" "}
                 {activeBoost.expiresAt
                   ? new Date(activeBoost.expiresAt).toLocaleDateString()
                   : "—"}
@@ -181,7 +185,7 @@ export function PostBoostDialog({
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="boost-duration">
-              Duration in days {selected && `(default ${selected.durationDays})`}
+              Duration in days {selected && `(package default ${selected.durationDays})`}
             </Label>
             <Input
               id="boost-duration"

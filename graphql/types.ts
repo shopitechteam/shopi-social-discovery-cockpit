@@ -274,6 +274,7 @@ export interface BoostState {
   tier?: BoostTier | null;
   multiplier: number;
   priority: number;
+  startsAt?: string | null;
   expiresAt?: string | null;
   boostId?: string | null;
 }
