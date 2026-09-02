@@ -245,6 +245,11 @@ export default function PostsPage() {
                         {post.status === ContentStatus.ACTIVE && !post.isLive && (
                           <Badge variant="secondary">not live</Badge>
                         )}
+                        {post.boost?.isBoosted && (
+                          <Badge variant="accent" className="capitalize">
+                            {post.boost.tier} boost ×{post.boost.multiplier}
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-muted">

@@ -193,6 +193,7 @@ export interface AdminContent {
   stats: EngagementStats;
   approval: ApprovalState;
   moderation: ModerationFlags;
+  boost?: BoostState | null;
   location?: ContentLocation | null;
   creator?: AdminUser | null;
   createdAt: string;
@@ -215,6 +216,66 @@ export interface AdminImpersonationPayload {
   token: string;
   expiresAt: string;
   targetUser: AdminUser;
+}
+
+// ── Boosts ───────────────────────────────────────────────────────────────────
+
+export enum BoostTier {
+  SILVER = "silver",
+  GOLD = "gold",
+  PLATINUM = "platinum",
+}
+
+export enum BoostStatus {
+  ACTIVE = "active",
+  EXPIRED = "expired",
+  CANCELLED = "cancelled",
+}
+
+/** A purchasable promotion package as advertised by the API. */
+export interface BoostPackage {
+  tier: BoostTier;
+  name: string;
+  description: string;
+  multiplier: number;
+  priority: number;
+  durationDays: number;
+  priceKes: number;
+}
+
+/** One campaign — the audit record behind a post's live promotion. */
+export interface Boost {
+  id: string;
+  contentId: string;
+  creatorId: string;
+  tier: BoostTier;
+  status: BoostStatus;
+  multiplier: number;
+  priority: number;
+  durationDays: number;
+  priceKes: number;
+  startsAt: string;
+  endsAt: string;
+  createdBy?: string | null;
+  note?: string | null;
+  endedAt?: string | null;
+  createdAt: string;
+}
+
+export interface BoostListItem {
+  boost: Boost;
+  content?: AdminContent | null;
+  creator?: AdminUser | null;
+}
+
+/** Denormalised promotion state carried on the post itself. */
+export interface BoostState {
+  isBoosted: boolean;
+  tier?: BoostTier | null;
+  multiplier: number;
+  priority: number;
+  expiresAt?: string | null;
+  boostId?: string | null;
 }
 
 export interface ImageUploadSession {

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Clapperboard,
+  Rocket,
   Users,
   FolderTree,
   Siren,
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/moderation", label: "Moderation", icon: Siren },
   { href: "/posts", label: "Posts", icon: Clapperboard },
+  { href: "/boosts", label: "Boosts", icon: Rocket },
   { href: "/users", label: "Users", icon: Users },
   { href: "/creators", label: "Creators", icon: Trophy },
   { href: "/growth", label: "Growth", icon: ChartNoAxesCombined },

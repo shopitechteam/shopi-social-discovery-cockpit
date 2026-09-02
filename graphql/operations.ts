@@ -12,6 +12,12 @@ import type {
   AdminSystemOverview,
   AdminContentMediaItemInput,
   AdminUser,
+  Boost,
+  BoostListItem,
+  BoostPackage,
+  BoostStatus,
+  BoostTier,
+  PaginationMeta,
   AdminUserDeletionSummary,
   ImageUploadSession,
   VideoUploadSession,
@@ -118,6 +124,14 @@ const ADMIN_CONTENT_FIELDS = gql`
     moderation {
       isReported
       reportCount
+    }
+    boost {
+      isBoosted
+      tier
+      multiplier
+      priority
+      expiresAt
+      boostId
     }
     location {
       county
@@ -745,6 +759,111 @@ export const ADMIN_SET_USER_SUSPENDED: TypedDocumentNode<
       ...AdminUserFields
     }
   }
+  ${ADMIN_USER_FIELDS}
+`;
+
+// ── Boosts ───────────────────────────────────────────────────────────────────
+
+export const BOOST_PACKAGES: TypedDocumentNode<
+  { boostPackages: BoostPackage[] },
+  Record<string, never>
+> = gql`
+  query BoostPackages {
+    boostPackages {
+      tier
+      name
+      description
+      multiplier
+      priority
+      durationDays
+      priceKes
+    }
+  }
+`;
+
+const BOOST_FIELDS = gql`
+  fragment BoostFields on Boost {
+    id
+    contentId
+    creatorId
+    tier
+    status
+    multiplier
+    priority
+    durationDays
+    priceKes
+    startsAt
+    endsAt
+    createdBy
+    note
+    endedAt
+    createdAt
+  }
+`;
+
+export const ADMIN_BOOST_CONTENT: TypedDocumentNode<
+  { adminBoostContent: Boost },
+  { contentId: string; tier: BoostTier; durationDays?: number | null; note?: string | null }
+> = gql`
+  mutation AdminBoostContent(
+    $contentId: String!
+    $tier: BoostTier!
+    $durationDays: Int
+    $note: String
+  ) {
+    adminBoostContent(
+      contentId: $contentId
+      tier: $tier
+      durationDays: $durationDays
+      note: $note
+    ) {
+      ...BoostFields
+    }
+  }
+  ${BOOST_FIELDS}
+`;
+
+export const ADMIN_CANCEL_BOOST: TypedDocumentNode<
+  { adminCancelBoost: Boost },
+  { boostId: string }
+> = gql`
+  mutation AdminCancelBoost($boostId: String!) {
+    adminCancelBoost(boostId: $boostId) {
+      ...BoostFields
+    }
+  }
+  ${BOOST_FIELDS}
+`;
+
+export const ADMIN_BOOSTS: TypedDocumentNode<
+  { adminBoosts: { data: BoostListItem[]; meta: PaginationMeta } },
+  { page?: number; limit?: number; status?: BoostStatus | null; tier?: BoostTier | null }
+> = gql`
+  query AdminBoosts($page: Int, $limit: Int, $status: BoostStatus, $tier: BoostTier) {
+    adminBoosts(page: $page, limit: $limit, status: $status, tier: $tier) {
+      data {
+        boost {
+          ...BoostFields
+        }
+        content {
+          ...AdminContentFields
+        }
+        creator {
+          ...AdminUserFields
+        }
+      }
+      meta {
+        page
+        limit
+        total
+        totalPages
+        hasNextPage
+        hasPrevPage
+      }
+    }
+  }
+  ${BOOST_FIELDS}
+  ${ADMIN_CONTENT_FIELDS}
   ${ADMIN_USER_FIELDS}
 `;
 

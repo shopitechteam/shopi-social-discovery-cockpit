@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { toast } from "sonner";
-import { Check, EyeOff, Eye, Images, Loader2, MoreHorizontal, Trash2, X } from "lucide-react";
+import { Check, EyeOff, Eye, Images, Loader2, MoreHorizontal, Rocket, Trash2, X } from "lucide-react";
 import {
   APPROVE_CONTENT,
   REJECT_CONTENT,
@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PostMediaDialog } from "./post-media-dialog";
+import { PostBoostDialog } from "./post-boost-dialog";
 
 /** Queries to refresh after any moderation action. */
 const REFETCH = ["AdminContent", "AdminDashboardStats", "PendingApprovalContent"];
@@ -36,6 +37,7 @@ export function PostActions({ post }: { post: AdminContent }) {
   const [removeOpen, setRemoveOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
+  const [boostOpen, setBoostOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [removeReason, setRemoveReason] = useState("");
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -195,6 +197,18 @@ export function PostActions({ post }: { post: AdminContent }) {
       loading: togglingLive && canMakeLive,
     },
     {
+      key: "boost",
+      label: post.boost?.isBoosted ? "Manage boost" : "Boost",
+      icon: Rocket,
+      onSelect: () => {
+        closeMenu();
+        setBoostOpen(true);
+      },
+      // Only a live post can actually benefit — a hidden or removed one is not
+      // in any feed for the multiplier to act on.
+      visible: status === ContentStatus.ACTIVE,
+    },
+    {
       key: "media",
       label: "Edit media",
       icon: Images,
@@ -262,6 +276,9 @@ export function PostActions({ post }: { post: AdminContent }) {
           </div>
         )}
       </div>
+
+      {/* Boost dialog */}
+      <PostBoostDialog post={post} open={boostOpen} onOpenChange={setBoostOpen} />
 
       {/* Media repair dialog */}
       <PostMediaDialog post={post} open={mediaOpen} onOpenChange={setMediaOpen} />
