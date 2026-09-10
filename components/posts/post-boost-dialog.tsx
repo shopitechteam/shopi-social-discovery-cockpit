@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { toast } from "sonner";
-import { Rocket, Sparkles } from "lucide-react";
+import { Award, Crown, Medal, Rocket } from "lucide-react";
 import {
   ADMIN_BOOST_CONTENT,
   ADMIN_CANCEL_BOOST,
@@ -26,6 +26,13 @@ import {
 } from "@/components/ui/dialog";
 
 const REFETCH = ["AdminContent", "AdminBoosts", "AdminDashboardStats", "PendingApprovalContent"];
+
+/** Rank mark per package — mirrors the badge buyers see on the listing. */
+const TIER_ICON: Record<BoostTier, typeof Medal> = {
+  [BoostTier.SILVER]: Medal,
+  [BoostTier.GOLD]: Award,
+  [BoostTier.PLATINUM]: Crown,
+};
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Something went wrong";
@@ -134,7 +141,10 @@ export function PostBoostDialog({
         {activeBoost && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-subtle p-3">
             <div className="flex items-center gap-2 text-sm">
-              <Sparkles className="size-4 text-accent" />
+              {(() => {
+                const Icon = TIER_ICON[activeBoost.tier as BoostTier] ?? Medal;
+                return <Icon className="size-4 text-accent" />;
+              })()}
               <span className="font-medium capitalize text-foreground">{activeBoost.tier}</span>
               <span className="text-muted">
                 ×{activeBoost.multiplier} · {boostRunLabel(activeBoost) ?? "running"} · ends{" "}
@@ -162,6 +172,10 @@ export function PostBoostDialog({
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
+                    {(() => {
+                      const Icon = TIER_ICON[pkg.tier] ?? Medal;
+                      return <Icon className="size-4 text-accent" />;
+                    })()}
                     <p className="text-sm font-semibold text-foreground">{pkg.name}</p>
                     <Badge variant="accent">×{pkg.multiplier} reach</Badge>
                   </div>

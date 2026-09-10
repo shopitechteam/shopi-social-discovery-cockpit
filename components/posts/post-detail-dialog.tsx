@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { ExternalLink, Flag } from "lucide-react";
-import { ContentSource, type AdminContent } from "@/graphql/types";
+import { ContentCreationMethod, ContentSource, type AdminContent } from "@/graphql/types";
 import { formatDate, formatNumber, formatPrice, displayName } from "@/lib/format";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -137,6 +137,13 @@ export function PostDetailDialog({
               <Row label="Type">
                 {post.type}
                 {post.source === ContentSource.TIKTOK_EMBED ? " · TikTok embed" : ""}
+              </Row>
+              <Row label="Written by">
+                {post.creationMethod === ContentCreationMethod.AGENT
+                  ? "Shopi Agent, then edited by the seller"
+                  : post.creationMethod === ContentCreationMethod.MANUAL
+                    ? "The seller, manually"
+                    : "— (posted before this was recorded)"}
               </Row>
               <Row label="Location">
                 {[post.location?.placeName, post.location?.subregion, post.location?.county]

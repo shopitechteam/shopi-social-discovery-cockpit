@@ -17,9 +17,18 @@ import {
   LogIn,
   Loader2,
   Trash2,
+  Smartphone,
+  Monitor,
+  Tablet,
+  HelpCircle,
 } from "lucide-react";
 import { ADMIN_CREATE_IMPERSONATION_TOKEN, ADMIN_USERS } from "@/graphql/operations";
-import { AttributionMedium, UserRole, type AdminUser } from "@/graphql/types";
+import {
+  AttributionMedium,
+  UserRole,
+  type AdminUser,
+  type SignupDevice,
+} from "@/graphql/types";
 import { formatDate, formatRelative, displayName } from "@/lib/format";
 import { useAuthStore } from "@/stores/auth";
 import { Input } from "@/components/ui/input";
@@ -82,6 +91,53 @@ function sourceLabel(user: AdminUser): string {
   const source = user.attribution?.source;
   if (!source) return "—";
   return source;
+}
+
+const DEVICE_ICON = {
+  MOBILE: Smartphone,
+  TABLET: Tablet,
+  DESKTOP: Monitor,
+  OTHER: HelpCircle,
+} as const;
+
+const DEVICE_LABEL = {
+  MOBILE: "Phone",
+  TABLET: "Tablet",
+  DESKTOP: "Desktop",
+  OTHER: "Unknown",
+} as const;
+
+/**
+ * What the account was first seen on.
+ *
+ * Taken from the user's earliest recorded session, which lands moments after
+ * registration. Accounts whose first session predates session capture show a
+ * dash rather than a guess — same rule as the source column beside it.
+ */
+function SignupDeviceCell({ device }: { device?: SignupDevice | null }) {
+  if (!device) {
+    return (
+      <span className="text-sm text-muted" title="No session recorded for this account">
+        —
+      </span>
+    );
+  }
+
+  const Icon = DEVICE_ICON[device.deviceType] ?? HelpCircle;
+  const detail = [device.operatingSystem, device.browser].filter(Boolean).join(" · ");
+
+  return (
+    <span
+      className="flex items-center gap-2 text-sm text-foreground"
+      title={`First seen ${formatDate(device.firstSeenAt)}${detail ? ` on ${detail}` : ""}`}
+    >
+      <Icon className="size-4 shrink-0 text-muted" />
+      <span>
+        {DEVICE_LABEL[device.deviceType] ?? device.deviceType}
+        {detail ? <span className="ml-1 text-muted">{detail}</span> : null}
+      </span>
+    </span>
+  );
 }
 
 /** Badge tone per medium, so paid and organic are distinguishable at a glance. */
@@ -347,6 +403,7 @@ export default function UsersPage() {
                   <TableHead>Roles</TableHead>
                   <TableHead>Sign-in</TableHead>
                   <TableHead>Source</TableHead>
+                  <TableHead>Device</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -424,6 +481,9 @@ export default function UsersPage() {
                             —
                           </span>
                         )}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <SignupDeviceCell device={user.signupDevice} />
                       </TableCell>
                       <TableCell>
                         {user.isSuspended ? (

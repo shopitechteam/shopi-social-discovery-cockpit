@@ -31,6 +31,12 @@ export enum ContentSource {
   TIKTOK_EMBED = "TIKTOK_EMBED",
 }
 
+/** How the listing's words were written. A different axis from ContentSource. */
+export enum ContentCreationMethod {
+  MANUAL = "MANUAL",
+  AGENT = "AGENT",
+}
+
 export enum AdminCreatorSort {
   ENGAGEMENT = "ENGAGEMENT",
   SAVES = "SAVES",
@@ -87,6 +93,17 @@ export interface UserAttribution {
   surface?: string | null;
 }
 
+export type SessionDeviceType = "MOBILE" | "TABLET" | "DESKTOP" | "OTHER";
+
+/** From the user's earliest recorded session — see the API's signup-session loader. */
+export interface SignupDevice {
+  deviceType: SessionDeviceType;
+  operatingSystem?: string | null;
+  browser?: string | null;
+  platform?: string | null;
+  firstSeenAt: string;
+}
+
 export interface AdminUser {
   id: string;
   email?: string | null;
@@ -102,6 +119,8 @@ export interface AdminUser {
   profile?: UserProfile | null;
   /** Absent for accounts created before attribution shipped — show "unknown". */
   attribution?: UserAttribution | null;
+  /** Absent when the account has no recorded session — show "not recorded". */
+  signupDevice?: SignupDevice | null;
   createdAt: string;
 }
 
@@ -183,6 +202,8 @@ export interface AdminContent {
   caption?: string | null;
   type: ContentType;
   source: ContentSource;
+  /** Absent on posts published before the field existed — show "not recorded". */
+  creationMethod?: ContentCreationMethod | null;
   status: ContentStatus;
   isLive: boolean;
   processingError?: string | null;
@@ -416,6 +437,53 @@ export interface AdminGrowthAnalytics {
   deviceTypes: NamedCount[];
   operatingSystems: NamedCount[];
   browsers: NamedCount[];
+}
+
+/** UP is >= +20% against the previous window, DOWN is worse than -5%. */
+export type GrowthDirection = "UP" | "FLAT" | "DOWN";
+
+export interface GrowthComparison {
+  key: string;
+  label: string;
+  current: number;
+  previous: number;
+  changePercent: number;
+  direction: GrowthDirection;
+}
+
+/** One bucket — a UTC day ("2026-09-10") or a calendar month ("2026-09"). */
+export interface GrowthBucket {
+  key: string;
+  label: string;
+  signups: number;
+  posts: number;
+  postingSellers: number;
+}
+
+export interface GrowthActivation {
+  cohortSignups: number;
+  cohortActivated: number;
+  cohortActivationPercent: number;
+  medianHoursToFirstPost?: number | null;
+  lifetimeUsers: number;
+  lifetimeActivated: number;
+  lifetimeActivationPercent: number;
+  repeatSellers: number;
+  postsPerPostingSeller: number;
+}
+
+export interface AdminGrowthPulse {
+  from: string;
+  to: string;
+  previousFrom: string;
+  previousTo: string;
+  windowDays: number;
+  daily: GrowthBucket[];
+  monthly: GrowthBucket[];
+  comparisons: GrowthComparison[];
+  activation: GrowthActivation;
+  totalUsers: number;
+  totalPosts: number;
 }
 
 export interface AdminCountyPerformance {

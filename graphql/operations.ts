@@ -8,6 +8,7 @@ import type {
   AdminContent,
   AdminDashboardStats,
   AdminGrowthAnalytics,
+  AdminGrowthPulse,
   AdminLocationAnalytics,
   AdminSystemOverview,
   AdminContentMediaItemInput,
@@ -72,6 +73,25 @@ const ADMIN_USER_FIELDS = gql`
   }
 `;
 
+/**
+ * Signup device, selected separately rather than folded into AdminUserFields.
+ *
+ * The field is @Authorized(ADMIN) on the server, and that fragment is also used
+ * by the login mutation — which runs before the caller has a session at all.
+ * Adding it there would make every admin login request a field it is not yet
+ * allowed to read.
+ */
+const SIGNUP_DEVICE_FIELDS = gql`
+  fragment SignupDeviceFields on User {
+    signupDevice {
+      deviceType
+      operatingSystem
+      browser
+      firstSeenAt
+    }
+  }
+`;
+
 const ADMIN_CONTENT_FIELDS = gql`
   fragment AdminContentFields on Content {
     id
@@ -79,6 +99,7 @@ const ADMIN_CONTENT_FIELDS = gql`
     caption
     type
     source
+    creationMethod
     status
     isLive
     processingError
@@ -349,6 +370,56 @@ export const ADMIN_GROWTH_ANALYTICS: TypedDocumentNode<
         key
         label
         count
+      }
+    }
+  }
+`;
+
+export const ADMIN_GROWTH_PULSE: TypedDocumentNode<
+  { adminGrowthPulse: AdminGrowthPulse },
+  { days?: number; months?: number }
+> = gql`
+  query AdminGrowthPulse($days: Int, $months: Int) {
+    adminGrowthPulse(days: $days, months: $months) {
+      from
+      to
+      previousFrom
+      previousTo
+      windowDays
+      totalUsers
+      totalPosts
+      daily {
+        key
+        label
+        signups
+        posts
+        postingSellers
+      }
+      monthly {
+        key
+        label
+        signups
+        posts
+        postingSellers
+      }
+      comparisons {
+        key
+        label
+        current
+        previous
+        changePercent
+        direction
+      }
+      activation {
+        cohortSignups
+        cohortActivated
+        cohortActivationPercent
+        medianHoursToFirstPost
+        lifetimeUsers
+        lifetimeActivated
+        lifetimeActivationPercent
+        repeatSellers
+        postsPerPostingSeller
       }
     }
   }
@@ -713,6 +784,7 @@ export const ADMIN_USERS: TypedDocumentNode<
     ) {
       data {
         ...AdminUserFields
+        ...SignupDeviceFields
       }
       meta {
         page
@@ -725,6 +797,7 @@ export const ADMIN_USERS: TypedDocumentNode<
     }
   }
   ${ADMIN_USER_FIELDS}
+  ${SIGNUP_DEVICE_FIELDS}
 `;
 
 export const ADMIN_UPDATE_USER_ROLES: TypedDocumentNode<

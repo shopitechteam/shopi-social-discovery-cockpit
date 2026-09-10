@@ -21,12 +21,24 @@ interface TimeSeriesChartProps {
   dates: string[];
   series: TimeSeries[];
   height?: number;
-  /** "line" (default) · "area" (single-series wash) · "bars" (daily columns) */
-  kind?: "line" | "area" | "bars";
+  /**
+   * "line" (default) · "area" (single-series wash) · "bars" (single-series
+   * columns) · "grouped-bars" (one column per series, side by side).
+   */
+  kind?: "line" | "area" | "bars" | "grouped-bars";
   valueFormatter?: (value: number) => string;
+  /**
+   * Axis and tooltip labels, one per bucket. Supply these when the keys are not
+   * "YYYY-MM-DD" — a monthly bucket ("2026-09") cannot be parsed as a day.
+   */
+  labels?: string[];
 }
 
 const PAD = { top: 12, right: 16, bottom: 24, left: 44 };
+
+/** Surface gap between neighbouring marks, per the mark spec. */
+const BAR_GAP = 2;
+const MAX_BAR_W = 24;
 
 /**
  * Dependency-free SVG time-series chart following the dataviz mark specs:
@@ -40,6 +52,7 @@ export function TimeSeriesChart({
   height = 220,
   kind = "line",
   valueFormatter = (v) => v.toLocaleString(),
+  labels,
 }: TimeSeriesChartProps) {
   const { ref, width } = useContainerWidth<HTMLDivElement>();
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -59,20 +72,41 @@ export function TimeSeriesChart({
 
   const labelIndexes = useMemo(() => pickLabelIndexes(n), [n]);
 
+  const isBars = kind === "bars" || kind === "grouped-bars";
+
   // Bars geometry: ≤24px thick, 2px surface gap between neighbours.
   const band = n > 0 ? plotW / n : 0;
-  const barW = Math.min(24, Math.max(band - 2, 1));
+  const barW = Math.min(MAX_BAR_W, Math.max(band - BAR_GAP, 1));
+
+  // Grouped bars share the band: every series gets an equal slice, separated by
+  // the same 2px surface gap that separates one bucket from the next.
+  //
+  // The group is clamped to the band. Without it, a narrow band plus the 1px
+  // floor on bar width lets a group grow wider than its own slot and bleed into
+  // the neighbouring bucket's bars.
+  const groupCount = Math.max(series.length, 1);
+  const groupGaps = BAR_GAP * (groupCount - 1);
+  const rawBarW = Math.max((band - BAR_GAP - groupGaps) / groupCount, 1);
+  const groupBarW = Math.min(
+    MAX_BAR_W,
+    rawBarW,
+    Math.max((band - groupGaps) / groupCount, 0.5),
+  );
+  const groupW = groupBarW * groupCount + groupGaps;
+
+  /** Axis/tooltip text for a bucket: caller-supplied label, else a day format. */
+  const bucketLabel = (i: number) => labels?.[i] ?? shortDay(dates[i]);
 
   function handleMove(e: React.MouseEvent<SVGSVGElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - rect.left - PAD.left;
     if (n === 0 || plotW === 0) return;
-    const i = kind === "bars" ? Math.floor(px / band) : Math.round((px / plotW) * (n - 1));
+    const i = isBars ? Math.floor(px / band) : Math.round((px / plotW) * (n - 1));
     setHoverIndex(Math.min(Math.max(i, 0), n - 1));
   }
 
   const hover = hoverIndex !== null && hoverIndex < n ? hoverIndex : null;
-  const hoverX = hover !== null ? (kind === "bars" ? hover * band + band / 2 : x(hover)) : 0;
+  const hoverX = hover !== null ? (isBars ? hover * band + band / 2 : x(hover)) : 0;
   // Flip the tooltip to the left side once past the midpoint so it never clips.
   const tooltipLeft = hover !== null && width > 0 ? PAD.left + hoverX : 0;
   const tooltipFlip = hover !== null && hoverX > plotW / 2;
@@ -129,18 +163,42 @@ export function TimeSeriesChart({
               {labelIndexes.map((i) => (
                 <text
                   key={i}
-                  x={kind === "bars" ? i * band + band / 2 : x(i)}
+                  x={isBars ? i * band + band / 2 : x(i)}
                   y={plotH + 16}
                   textAnchor="middle"
                   className="fill-muted"
                   fontSize={11}
                 >
-                  {shortDay(dates[i])}
+                  {bucketLabel(i)}
                 </text>
               ))}
 
               {/* Marks */}
-              {kind === "bars"
+              {kind === "grouped-bars"
+                ? series.map((s, si) => (
+                    <g key={s.name}>
+                      {s.values.map((v, i) => {
+                        if (v <= 0) return null;
+                        const h = plotH - y(v);
+                        const r = Math.min(4, groupBarW / 2, h);
+                        const bx =
+                          i * band +
+                          (band - groupW) / 2 +
+                          si * (groupBarW + BAR_GAP);
+                        // Rounded data-end (top), square at the baseline.
+                        const d = `M ${bx} ${plotH} V ${y(v) + r} Q ${bx} ${y(v)} ${bx + r} ${y(v)} H ${bx + groupBarW - r} Q ${bx + groupBarW} ${y(v)} ${bx + groupBarW} ${y(v) + r} V ${plotH} Z`;
+                        return (
+                          <path
+                            key={i}
+                            d={d}
+                            fill={s.color}
+                            opacity={hover === null || hover === i ? 1 : 0.45}
+                          />
+                        );
+                      })}
+                    </g>
+                  ))
+                : kind === "bars"
                 ? series.slice(0, 1).map((s) => (
                     <g key={s.name}>
                       {s.values.map((v, i) => {
@@ -195,7 +253,7 @@ export function TimeSeriesChart({
               {/* Crosshair + hover markers */}
               {hover !== null && (
                 <g pointerEvents="none">
-                  {kind !== "bars" && (
+                  {!isBars && (
                     <line
                       x1={hoverX}
                       x2={hoverX}
@@ -205,7 +263,7 @@ export function TimeSeriesChart({
                       strokeWidth={1}
                     />
                   )}
-                  {kind !== "bars" &&
+                  {!isBars &&
                     series.map((s) => (
                       <circle
                         key={s.name}
@@ -234,7 +292,7 @@ export function TimeSeriesChart({
             right: tooltipFlip ? width - tooltipLeft + 10 : undefined,
           }}
         >
-          <p className="mb-1 font-semibold text-foreground">{shortDay(dates[hover])}</p>
+          <p className="mb-1 font-semibold text-foreground">{bucketLabel(hover)}</p>
           {series.map((s) => (
             <p key={s.name} className="flex items-center gap-1.5 text-muted">
               <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />

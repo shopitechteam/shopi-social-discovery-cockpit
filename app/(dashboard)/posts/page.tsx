@@ -2,9 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import { Search, Flag, RefreshCw } from "lucide-react";
+import { Search, Flag, RefreshCw, Sparkles, PenLine, Music2 } from "lucide-react";
 import { ADMIN_CONTENT, ADMIN_DASHBOARD_STATS } from "@/graphql/operations";
-import { ContentStatus, type AdminContent } from "@/graphql/types";
+import {
+  ContentCreationMethod,
+  ContentSource,
+  ContentStatus,
+  type AdminContent,
+} from "@/graphql/types";
 import { formatDate, formatRelative, formatNumber, formatPrice, displayName } from "@/lib/format";
 import { boostRunLabel } from "@/lib/boost";
 import { cn } from "@/lib/utils";
@@ -43,6 +48,43 @@ const TABS: { key: TabKey; label: string; status?: ContentStatus }[] = [
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 350;
+
+/**
+ * How the listing got written: Shopi Agent or the seller.
+ *
+ * TikTok imports are called out separately because they answer a different
+ * question — where the media came from — and lumping them into either bucket
+ * would make both misleading. Posts published before the field existed show a
+ * dash; defaulting them to "Manual" would invent a number.
+ */
+function CreationMethodBadge({ post }: { post: AdminContent }) {
+  if (post.creationMethod === ContentCreationMethod.AGENT) {
+    return (
+      <Badge variant="accent" className="flex w-fit items-center gap-1">
+        <Sparkles className="size-3.5" />
+        Agent
+      </Badge>
+    );
+  }
+
+  if (post.creationMethod === ContentCreationMethod.MANUAL) {
+    return (
+      <span className="flex items-center gap-1.5 text-sm text-muted">
+        <PenLine className="size-3.5" />
+        Manual
+        {post.source === ContentSource.TIKTOK_EMBED && (
+          <Music2 className="size-3.5" aria-label="TikTok import" />
+        )}
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-sm text-muted" title="Posted before this was recorded">
+      —
+    </span>
+  );
+}
 
 export default function PostsPage() {
   const [tab, setTab] = useState<TabKey>("pending");
@@ -186,6 +228,7 @@ export default function PostsPage() {
                 <TableRow>
                   <TableHead>Post</TableHead>
                   <TableHead>Creator</TableHead>
+                  <TableHead>Written by</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Engagement</TableHead>
@@ -233,6 +276,9 @@ export default function PostsPage() {
                           {displayName(post.creator)}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <CreationMethodBadge post={post} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm">
                       {formatPrice(post.price)}
