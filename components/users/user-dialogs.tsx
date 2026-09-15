@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   ADMIN_UPDATE_USER_ROLES,
   ADMIN_SET_USER_VERIFIED,
+  ADMIN_SET_USER_SOCIAL_PROOF,
   ADMIN_SET_USER_SUSPENDED,
   ADMIN_CREATE_ACCOUNT,
   ADMIN_DELETE_USER,
@@ -276,6 +277,159 @@ export function VerifyDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ── Social proof (homepage featured sellers) ─────────────────────────────────
+
+const HEADLINE_MAX = 80;
+
+/**
+ * Feature a seller in the homepage "Selling on Shopi right now" section. The
+ * public site reads every featured seller (socialProofSellers) in sort order,
+ * so this is the whole control surface: no deploy needed to add or remove one.
+ * Listing counts and views on the homepage are live — only the headline is
+ * written here.
+ */
+export function SocialProofDialog({
+  user,
+  open,
+  onOpenChange,
+}: {
+  user: AdminUser | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  if (!user) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        {/* Mounted only while open and keyed by user, so the form starts from
+            the seller's current placement every time without copying props
+            into state inside an effect. */}
+        {open && <SocialProofForm key={user.id} user={user} onDone={() => onOpenChange(false)} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SocialProofForm({ user, onDone }: { user: AdminUser; onDone: () => void }) {
+  const [featured, setFeatured] = useState(Boolean(user.socialProof?.featured));
+  const [headline, setHeadline] = useState(user.socialProof?.headline ?? "");
+  const [sortOrder, setSortOrder] = useState(String(user.socialProof?.sortOrder ?? 0));
+  const [save, { loading }] = useMutation(ADMIN_SET_USER_SOCIAL_PROOF, {
+    refetchQueries: REFETCH,
+  });
+
+  const blockedReason = user.isSuspended
+    ? "Suspended accounts can’t be featured."
+    : !user.username
+      ? "This account has no @username yet, so there’s no public profile to link to."
+      : null;
+  const canFeature = !blockedReason;
+  const order = Number(sortOrder);
+  const orderValid =
+    sortOrder.trim() !== "" && Number.isInteger(order) && order >= 0 && order <= 999;
+
+  async function handleSave() {
+    if (!orderValid) return;
+    try {
+      await save({
+        variables: {
+          userId: user.id,
+          featured: featured && canFeature,
+          headline: headline.trim(),
+          sortOrder: order,
+        },
+      });
+      toast.success(
+        featured && canFeature
+          ? `${displayName(user)} is featured on the homepage`
+          : `${displayName(user)} removed from the homepage`,
+      );
+      onDone();
+    } catch (err) {
+      toast.error(errMessage(err));
+    }
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Social proof: {displayName(user)}</DialogTitle>
+        <DialogDescription>
+          Featured sellers appear on the homepage with their name, avatar, location, live listing
+          count and newest listings. Sellers with no live listings are hidden automatically.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <label
+          className={`flex items-center justify-between gap-4 rounded-lg border p-3 transition-colors ${
+            featured && canFeature ? "border-primary/50 bg-primary-soft" : "border-border"
+          } ${canFeature ? "cursor-pointer hover:bg-subtle" : "cursor-not-allowed opacity-70"}`}
+        >
+          <div>
+            <p className="text-sm font-semibold text-foreground">Feature on homepage</p>
+            <p className="text-xs text-muted">{blockedReason ?? `Links to /@${user.username}`}</p>
+          </div>
+          <input
+            type="checkbox"
+            className="size-4 accent-[#d81470]"
+            checked={featured && canFeature}
+            disabled={!canFeature}
+            onChange={(e) => setFeatured(e.target.checked)}
+          />
+        </label>
+
+        <div className="space-y-1.5">
+          <div className="flex items-baseline justify-between">
+            <Label htmlFor="social-proof-headline">Headline (optional)</Label>
+            <span className="text-xs text-muted tabular-nums">
+              {headline.trim().length}/{HEADLINE_MAX}
+            </span>
+          </div>
+          <Input
+            id="social-proof-headline"
+            value={headline}
+            maxLength={HEADLINE_MAX}
+            onChange={(e) => setHeadline(e.target.value)}
+            placeholder="e.g. Computer & phone accessories"
+          />
+          <p className="text-xs text-muted">
+            What they sell, in a few words. Shown publicly, so no phone numbers.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="social-proof-order">Sort order</Label>
+          <Input
+            id="social-proof-order"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={999}
+            step={1}
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="w-28"
+          />
+          <p className={`text-xs ${orderValid ? "text-muted" : "text-error"}`}>
+            {orderValid ? "Lower numbers show first." : "Use a whole number from 0 to 999."}
+          </p>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} loading={loading} disabled={!orderValid}>
+          Save
+        </Button>
+      </DialogFooter>
+    </>
   );
 }
 

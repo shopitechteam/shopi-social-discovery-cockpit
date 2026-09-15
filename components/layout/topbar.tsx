@@ -28,6 +28,7 @@ const TITLES: Record<string, string> = {
   "/boosts": "Boosts",
   "/users": "Users",
   "/creators": "Creators",
+  "/social-proof": "Social proof",
   "/growth": "Growth",
   "/categories": "Categories",
   "/conversations": "Conversations",

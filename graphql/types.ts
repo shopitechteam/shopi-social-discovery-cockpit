@@ -104,6 +104,14 @@ export interface SignupDevice {
   firstSeenAt: string;
 }
 
+/** Homepage social-proof placement — null for sellers never featured. */
+export interface SocialProofFeature {
+  featured: boolean;
+  headline?: string | null;
+  sortOrder: number;
+  featuredAt?: string | null;
+}
+
 export interface AdminUser {
   id: string;
   email?: string | null;
@@ -115,6 +123,7 @@ export interface AdminUser {
   suspendedAt?: string | null;
   suspensionReason?: string | null;
   profileVisitCount: number;
+  socialProof?: SocialProofFeature | null;
   authProviders: AuthProviders;
   profile?: UserProfile | null;
   /** Absent for accounts created before attribution shipped — show "unknown". */
@@ -680,4 +689,41 @@ export interface Category {
   sortOrder: number;
   isActive: boolean;
   contentCount: number;
+}
+
+// ── Social proof performance ─────────────────────────────────────────────────
+
+export type TrafficSource =
+  | "SOCIAL_PROOF"
+  | "SEARCH"
+  | "AI"
+  | "SOCIAL"
+  | "INTERNAL"
+  | "DIRECT"
+  | "OTHER";
+
+/** A tracked seller's homepage → storefront → contact funnel over `days`. */
+export interface SellerPerformance {
+  sellerId: string;
+  username: string;
+  displayName: string;
+  avatar?: string | null;
+  featured: boolean;
+  headline?: string | null;
+  days: number;
+  impressions: number;
+  clicks: number;
+  /** Percentage, e.g. 7.5 */
+  clickThroughRate: number;
+  profileViews: number;
+  listingViews: number;
+  uniqueVisitors: number;
+  messageClicks: number;
+  contactReveals: number;
+  callClicks: number;
+  conversions: number;
+  /** Converting sessions ÷ unique visitors, as a percentage. */
+  conversionRate: number;
+  sources: { source: TrafficSource; visits: number; conversions: number }[];
+  daily: { date: string; clicks: number; visits: number; conversions: number }[];
 }

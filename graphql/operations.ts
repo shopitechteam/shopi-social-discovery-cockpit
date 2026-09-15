@@ -31,6 +31,7 @@ import type {
   PaginatedContent,
   PaginatedCreators,
   PaginatedUsers,
+  SellerPerformance,
   UserRole,
 } from "./types";
 
@@ -48,6 +49,12 @@ const ADMIN_USER_FIELDS = gql`
     suspendedAt
     suspensionReason
     profileVisitCount
+    socialProof {
+      featured
+      headline
+      sortOrder
+      featuredAt
+    }
     authProviders {
       local
       google
@@ -762,6 +769,7 @@ export const ADMIN_USERS: TypedDocumentNode<
     suspended?: boolean | null;
     source?: string | null;
     medium?: AttributionMedium | null;
+    socialProof?: boolean | null;
   }
 > = gql`
   query AdminUsers(
@@ -772,6 +780,7 @@ export const ADMIN_USERS: TypedDocumentNode<
     $suspended: Boolean
     $source: String
     $medium: AttributionMedium
+    $socialProof: Boolean
   ) {
     adminUsers(
       page: $page
@@ -781,6 +790,7 @@ export const ADMIN_USERS: TypedDocumentNode<
       suspended: $suspended
       source: $source
       medium: $medium
+      socialProof: $socialProof
     ) {
       data {
         ...AdminUserFields
@@ -818,6 +828,28 @@ export const ADMIN_SET_USER_VERIFIED: TypedDocumentNode<
 > = gql`
   mutation AdminSetUserVerified($userId: String!, $verified: Boolean!) {
     adminSetUserVerified(userId: $userId, verified: $verified) {
+      ...AdminUserFields
+    }
+  }
+  ${ADMIN_USER_FIELDS}
+`;
+
+export const ADMIN_SET_USER_SOCIAL_PROOF: TypedDocumentNode<
+  { adminSetUserSocialProof: AdminUser },
+  { userId: string; featured: boolean; headline?: string | null; sortOrder?: number | null }
+> = gql`
+  mutation AdminSetUserSocialProof(
+    $userId: String!
+    $featured: Boolean!
+    $headline: String
+    $sortOrder: Int
+  ) {
+    adminSetUserSocialProof(
+      userId: $userId
+      featured: $featured
+      headline: $headline
+      sortOrder: $sortOrder
+    ) {
       ...AdminUserFields
     }
   }
@@ -1263,5 +1295,46 @@ export const DELETE_CATEGORY: TypedDocumentNode<
 > = gql`
   mutation DeleteCategory($id: String!) {
     deleteCategory(id: $id)
+  }
+`;
+
+// ── Social proof performance ─────────────────────────────────────────────────
+
+export const ADMIN_SOCIAL_PROOF_PERFORMANCE: TypedDocumentNode<
+  { adminSocialProofPerformance: SellerPerformance[] },
+  { days?: number }
+> = gql`
+  query AdminSocialProofPerformance($days: Int) {
+    adminSocialProofPerformance(days: $days) {
+      sellerId
+      username
+      displayName
+      avatar
+      featured
+      headline
+      days
+      impressions
+      clicks
+      clickThroughRate
+      profileViews
+      listingViews
+      uniqueVisitors
+      messageClicks
+      contactReveals
+      callClicks
+      conversions
+      conversionRate
+      sources {
+        source
+        visits
+        conversions
+      }
+      daily {
+        date
+        clicks
+        visits
+        conversions
+      }
+    }
   }
 `;

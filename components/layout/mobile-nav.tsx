@@ -15,6 +15,7 @@ import {
   Siren,
   Trophy,
   Rocket,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { href: "/boosts", label: "Boosts", icon: Rocket },
   { href: "/users", label: "Users", icon: Users },
   { href: "/creators", label: "Creators", icon: Trophy },
+  { href: "/social-proof", label: "Social proof", icon: Sparkles },
   { href: "/growth", label: "Growth", icon: ChartNoAxesCombined },
   { href: "/categories", label: "Categories", icon: FolderTree },
   { href: "/conversations", label: "Conversations", icon: MessagesSquare },

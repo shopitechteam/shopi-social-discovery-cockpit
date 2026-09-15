@@ -21,6 +21,7 @@ import {
   Monitor,
   Tablet,
   HelpCircle,
+  Sparkles,
 } from "lucide-react";
 import { ADMIN_CREATE_IMPERSONATION_TOKEN, ADMIN_USERS } from "@/graphql/operations";
 import {
@@ -51,11 +52,22 @@ import {
   RolesDialog,
   SuspendDialog,
   VerifyDialog,
+  SocialProofDialog,
   CreateStaffDialog,
   DeleteUserDialog,
 } from "@/components/users/user-dialogs";
 
 const PAGE_SIZE = 20;
+/** Status-select value that lists homepage social-proof sellers. */
+const SOCIAL_PROOF_FILTER = "social-proof";
+
+/** The status select also carries the social-proof view, so map it to both args. */
+function statusFilterVars(value: string) {
+  return {
+    suspended: value === "true" ? true : value === "false" ? false : null,
+    socialProof: value === SOCIAL_PROOF_FILTER ? true : null,
+  };
+}
 const SEARCH_DEBOUNCE_MS = 350;
 
 function errMessage(err: unknown): string {
@@ -180,6 +192,8 @@ export default function UsersPage() {
   const [rolesOpen, setRolesOpen] = useState(false);
   const [verifyUser, setVerifyUser] = useState<AdminUser | null>(null);
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [socialProofUser, setSocialProofUser] = useState<AdminUser | null>(null);
+  const [socialProofOpen, setSocialProofOpen] = useState(false);
   const [suspendUser, setSuspendUser] = useState<AdminUser | null>(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null);
@@ -196,7 +210,7 @@ export default function UsersPage() {
       limit: PAGE_SIZE,
       search: submittedSearch || null,
       role: (roleFilter as UserRole) || null,
-      suspended: suspendedFilter === "" ? null : suspendedFilter === "true",
+      ...statusFilterVars(suspendedFilter),
       source: sourceFilter || null,
       medium: (mediumFilter as AttributionMedium) || null,
     },
@@ -218,6 +232,9 @@ export default function UsersPage() {
     () => (verifyUser ? (users.find((user) => user.id === verifyUser.id) ?? verifyUser) : null),
     [verifyUser, users],
   );
+  const socialProofUserFresh = socialProofUser
+    ? (users.find((user) => user.id === socialProofUser.id) ?? socialProofUser)
+    : null;
 
   useEffect(() => {
     const nextSearch = search.trim();
@@ -263,7 +280,7 @@ export default function UsersPage() {
         limit: PAGE_SIZE,
         search: submittedSearch || null,
         role: (roleFilter as UserRole) || null,
-        suspended: suspendedFilter === "" ? null : suspendedFilter === "true",
+        ...statusFilterVars(suspendedFilter),
         source: sourceFilter || null,
         medium: (mediumFilter as AttributionMedium) || null,
       });
@@ -335,6 +352,7 @@ export default function UsersPage() {
               <option value="">Any status</option>
               <option value="false">Active</option>
               <option value="true">Suspended</option>
+              <option value={SOCIAL_PROOF_FILTER}>Social proof</option>
             </Select>
             <Select
               value={mediumFilter}
@@ -498,6 +516,16 @@ export default function UsersPage() {
                         ) : (
                           <Badge variant="secondary">Unverified</Badge>
                         )}
+                        {user.socialProof?.featured && (
+                          <Badge
+                            variant="secondary"
+                            className="mt-1 gap-1"
+                            title={user.socialProof.headline ?? "Featured on the homepage"}
+                          >
+                            <Sparkles className="size-3" />
+                            Social proof
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell
                         className="whitespace-nowrap text-sm text-muted"
@@ -583,6 +611,19 @@ export default function UsersPage() {
                                 <button
                                   type="button"
                                   role="menuitem"
+                                  onClick={() => {
+                                    setOpenActionUserId(null);
+                                    setSocialProofUser(user);
+                                    setSocialProofOpen(true);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-subtle"
+                                >
+                                  <Sparkles />
+                                  {user.socialProof?.featured ? "Social proof ✓" : "Social proof"}
+                                </button>
+                                <button
+                                  type="button"
+                                  role="menuitem"
                                   disabled={isMe && !user.isSuspended}
                                   title={
                                     isMe && !user.isSuspended
@@ -644,6 +685,11 @@ export default function UsersPage() {
 
       <RolesDialog user={rolesUserFresh} open={rolesOpen} onOpenChange={setRolesOpen} />
       <VerifyDialog user={verifyUserFresh} open={verifyOpen} onOpenChange={setVerifyOpen} />
+      <SocialProofDialog
+        user={socialProofUserFresh}
+        open={socialProofOpen}
+        onOpenChange={setSocialProofOpen}
+      />
       <SuspendDialog user={suspendUserFresh} open={suspendOpen} onOpenChange={setSuspendOpen} />
       <DeleteUserDialog user={deleteUser} open={deleteOpen} onOpenChange={setDeleteOpen} />
       <CreateStaffDialog open={createOpen} onOpenChange={setCreateOpen} />
