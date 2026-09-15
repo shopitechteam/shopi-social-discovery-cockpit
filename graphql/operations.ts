@@ -103,6 +103,16 @@ const SIGNUP_DEVICE_FIELDS = gql`
       browser
       firstSeenAt
     }
+    adminLocation {
+      source
+      approximate
+      county
+      subCounty
+      ward
+      city
+      country
+      isp
+    }
   }
 `;
 

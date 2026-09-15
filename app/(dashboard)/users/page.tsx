@@ -22,12 +22,15 @@ import {
   Tablet,
   HelpCircle,
   Sparkles,
+  MapPin,
+  Globe,
 } from "lucide-react";
 import { ADMIN_CREATE_IMPERSONATION_TOKEN, ADMIN_USERS } from "@/graphql/operations";
 import {
   AttributionMedium,
   UserRole,
   type AdminUser,
+  type AdminUserLocation,
   type SignupDevice,
 } from "@/graphql/types";
 import { formatDate, formatRelative, displayName } from "@/lib/format";
@@ -148,6 +151,53 @@ function SignupDeviceCell({ device }: { device?: SignupDevice | null }) {
         {DEVICE_LABEL[device.deviceType] ?? device.deviceType}
         {detail ? <span className="ml-1 text-muted">{detail}</span> : null}
       </span>
+    </span>
+  );
+}
+
+/**
+ * County > ward when the user has saved a location on a post. Otherwise the
+ * county looked up from their signup IP, marked "approx" — Kenyan mobile data
+ * often routes through Nairobi, so treat it as a hint.
+ */
+function LocationCell({ location }: { location?: AdminUserLocation | null }) {
+  if (!location || (!location.county && !location.country)) {
+    return (
+      <span className="text-sm text-muted" title="No saved location and no IP lookup yet">
+        —
+      </span>
+    );
+  }
+
+  if (!location.approximate) {
+    const parts = [location.county, location.ward].filter(Boolean);
+    return (
+      <span
+        className="flex items-center gap-1.5 text-sm text-foreground"
+        title={[location.county, location.subCounty, location.ward].filter(Boolean).join(" > ")}
+      >
+        <MapPin className="size-3.5 shrink-0 text-muted" />
+        {parts.join(" > ")}
+      </span>
+    );
+  }
+
+  const label =
+    location.county ?? (location.country && location.country !== "KE" ? location.country : "Kenya");
+  return (
+    <span
+      className="flex items-center gap-1.5 text-sm text-foreground"
+      title={[
+        "Approximate — from signup IP",
+        location.city && `City: ${location.city}`,
+        location.isp && `Network: ${location.isp}`,
+      ]
+        .filter(Boolean)
+        .join("\n")}
+    >
+      <Globe className="size-3.5 shrink-0 text-muted" />
+      {label}
+      <span className="text-xs text-muted">approx</span>
     </span>
   );
 }
@@ -422,6 +472,7 @@ export default function UsersPage() {
                   <TableHead>Sign-in</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Device</TableHead>
+                  <TableHead>Location</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -502,6 +553,9 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <SignupDeviceCell device={user.signupDevice} />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <LocationCell location={user.adminLocation} />
                       </TableCell>
                       <TableCell>
                         {user.isSuspended ? (

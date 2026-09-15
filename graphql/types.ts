@@ -130,7 +130,24 @@ export interface AdminUser {
   attribution?: UserAttribution | null;
   /** Absent when the account has no recorded session — show "not recorded". */
   signupDevice?: SignupDevice | null;
+  /** Admin-only; null until a post location is saved or an IP lookup resolves. */
+  adminLocation?: AdminUserLocation | null;
   createdAt: string;
+}
+
+/**
+ * SAVED comes from a location the user picked on a post (county > ward).
+ * IP is looked up from their first session — an approximate county only.
+ */
+export interface AdminUserLocation {
+  source: "SAVED" | "IP";
+  approximate: boolean;
+  county?: string | null;
+  subCounty?: string | null;
+  ward?: string | null;
+  city?: string | null;
+  country?: string | null;
+  isp?: string | null;
 }
 
 export interface PaginationMeta {
