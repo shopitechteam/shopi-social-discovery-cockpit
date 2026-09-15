@@ -32,6 +32,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { PostThumb } from "@/components/posts/post-thumb";
 import { PostActions } from "@/components/posts/post-actions";
 import { PostDetailDialog } from "@/components/posts/post-detail-dialog";
+import { MediaRecoveryButton } from "@/components/posts/media-recovery-button";
 
 type TabKey = "pending" | "all" | ContentStatus;
 
@@ -202,6 +203,7 @@ export default function PostsPage() {
             {!refreshing && <RefreshCw />}
             {refreshing ? "Refreshing..." : "Refresh"}
           </Button>
+          <MediaRecoveryButton />
         </div>
       </div>
 

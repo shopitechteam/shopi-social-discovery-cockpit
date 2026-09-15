@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Eye,
   Mail,
+  Megaphone,
   RefreshCw,
   Search,
   ShieldAlert,
@@ -46,6 +47,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DonutChart, type DonutDatum } from "@/components/charts/donut-chart";
 import { HorizontalBarChart, type HorizontalBarDatum } from "@/components/charts/horizontal-bar-chart";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
+import { ComposeTeamMessageDialog } from "@/components/team/compose-team-message-dialog";
 
 const LIST_PAGE_SIZE = 18;
 const DETAIL_RANGE_OPTIONS = [
@@ -235,6 +237,7 @@ export default function CreatorsPage() {
   const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(null);
   const [detailDays, setDetailDays] = useState<number>(30);
   const [suspendOpen, setSuspendOpen] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const listVariables = {
@@ -648,6 +651,15 @@ export default function CreatorsPage() {
                             Open user record
                           </Link>
                         </Button>
+                        <Button variant="outline" onClick={() => setMessageOpen(true)}>
+                          <Megaphone className="mr-2 size-4" />
+                          Message as Shopi team
+                        </Button>
+                        <ComposeTeamMessageDialog
+                          open={messageOpen}
+                          onOpenChange={setMessageOpen}
+                          recipient={{ id: detail.creator.id, name: creatorName(detail.creator) }}
+                        />
                         {detail.creator.email && (
                           <Button asChild variant="outline">
                             <a href={`mailto:${detail.creator.email}`}>

@@ -346,6 +346,86 @@ export interface AdminUserDeletionSummary {
   updatedExternalReferences: number;
 }
 
+/** Counts returned by `adminTriggerMediaRecovery` — what the sweep re-queued. */
+export interface AdminMediaRecoverySummary {
+  triggeredAt: string;
+  scannedAssets: number;
+  imageJobs: number;
+  videoJobs: number;
+  stuckContents: number;
+  replayed: number;
+  tiktokJobs: number;
+}
+
+// ── Shopi team messages ──────────────────────────────────────────────────────
+
+export enum TeamMessageSender {
+  TEAM = "TEAM",
+  MEMBER = "MEMBER",
+}
+
+export enum TeamBroadcastAudience {
+  SELECTED = "SELECTED",
+  ALL_CREATORS = "ALL_CREATORS",
+  ACTIVE_CREATORS = "ACTIVE_CREATORS",
+}
+
+export interface TeamMessage {
+  id: string;
+  sender: TeamMessageSender;
+  subject?: string | null;
+  body: string;
+  broadcastId?: string | null;
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export interface TeamMessagePage {
+  items: TeamMessage[];
+  hasMore: boolean;
+  nextCursor?: string | null;
+}
+
+export interface TeamThread {
+  id: string;
+  userId: string;
+  lastMessageAt?: string | null;
+  lastMessagePreview?: string | null;
+  lastMessageSender?: TeamMessageSender | null;
+  lastMemberReplyAt?: string | null;
+  teamUnreadCount: number;
+  messageCount: number;
+  user?: Pick<AdminUser, "id" | "email" | "username" | "profile" | "isSuspended"> | null;
+}
+
+export interface PaginatedTeamThreads {
+  data: TeamThread[];
+  meta: PaginationMeta;
+  unreadThreads: number;
+}
+
+export interface TeamBroadcast {
+  id: string;
+  subject?: string | null;
+  body: string;
+  audience: TeamBroadcastAudience;
+  recipientCount: number;
+  respondentCount: number;
+  createdAt: string;
+}
+
+export interface PaginatedTeamBroadcasts {
+  data: TeamBroadcast[];
+  meta: PaginationMeta;
+}
+
+export interface AdminSendTeamMessageInput {
+  audience: TeamBroadcastAudience;
+  userIds?: string[] | null;
+  subject?: string | null;
+  body: string;
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface AdminDashboardStats {

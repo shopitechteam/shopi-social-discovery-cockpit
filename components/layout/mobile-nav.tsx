@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Map,
   Menu,
+  Megaphone,
   MessagesSquare,
   ShieldCheck,
   Siren,
@@ -41,6 +42,7 @@ const NAV_ITEMS = [
   { href: "/growth", label: "Growth", icon: ChartNoAxesCombined },
   { href: "/categories", label: "Categories", icon: FolderTree },
   { href: "/conversations", label: "Conversations", icon: MessagesSquare },
+  { href: "/team", label: "Shopi team", icon: Megaphone },
   { href: "/locations", label: "Locations", icon: Map },
   { href: "/system", label: "System", icon: Activity },
 ];

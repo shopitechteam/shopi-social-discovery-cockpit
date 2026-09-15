@@ -20,6 +20,13 @@ import type {
   BoostTier,
   PaginationMeta,
   AdminUserDeletionSummary,
+  AdminMediaRecoverySummary,
+  AdminSendTeamMessageInput,
+  PaginatedTeamBroadcasts,
+  PaginatedTeamThreads,
+  TeamBroadcast,
+  TeamMessage,
+  TeamMessagePage,
   ImageUploadSession,
   VideoUploadSession,
   AdminImpersonationPayload,
@@ -755,6 +762,178 @@ export const ADMIN_REMOVE_CONTENT: TypedDocumentNode<
     }
   }
   ${ADMIN_CONTENT_FIELDS}
+`;
+
+export const ADMIN_TRIGGER_MEDIA_RECOVERY: TypedDocumentNode<
+  { adminTriggerMediaRecovery: AdminMediaRecoverySummary },
+  Record<string, never>
+> = gql`
+  mutation AdminTriggerMediaRecovery {
+    adminTriggerMediaRecovery {
+      triggeredAt
+      scannedAssets
+      imageJobs
+      videoJobs
+      stuckContents
+      replayed
+      tiktokJobs
+    }
+  }
+`;
+
+// ── Shopi team messages ──────────────────────────────────────────────────────
+
+const TEAM_MESSAGE_FIELDS = gql`
+  fragment TeamMessageFields on TeamMessage {
+    id
+    sender
+    subject
+    body
+    broadcastId
+    readAt
+    createdAt
+  }
+`;
+
+const TEAM_BROADCAST_FIELDS = gql`
+  fragment TeamBroadcastFields on TeamBroadcast {
+    id
+    subject
+    body
+    audience
+    recipientCount
+    respondentCount
+    createdAt
+  }
+`;
+
+export const ADMIN_TEAM_THREADS: TypedDocumentNode<
+  { adminTeamThreads: PaginatedTeamThreads },
+  {
+    page?: number;
+    limit?: number;
+    unreadOnly?: boolean | null;
+    broadcastId?: string | null;
+    search?: string | null;
+  }
+> = gql`
+  query AdminTeamThreads(
+    $page: Int
+    $limit: Int
+    $unreadOnly: Boolean
+    $broadcastId: String
+    $search: String
+  ) {
+    adminTeamThreads(
+      page: $page
+      limit: $limit
+      unreadOnly: $unreadOnly
+      broadcastId: $broadcastId
+      search: $search
+    ) {
+      unreadThreads
+      data {
+        id
+        userId
+        lastMessageAt
+        lastMessagePreview
+        lastMessageSender
+        lastMemberReplyAt
+        teamUnreadCount
+        messageCount
+        user {
+          id
+          email
+          username
+          isSuspended
+          profile {
+            firstName
+            lastName
+            avatar
+          }
+        }
+      }
+      meta {
+        page
+        limit
+        total
+        totalPages
+        hasNextPage
+        hasPrevPage
+      }
+    }
+  }
+`;
+
+export const ADMIN_TEAM_THREAD_MESSAGES: TypedDocumentNode<
+  { adminTeamThreadMessages: TeamMessagePage },
+  { userId: string; limit?: number; before?: string | null }
+> = gql`
+  query AdminTeamThreadMessages($userId: String!, $limit: Int, $before: String) {
+    adminTeamThreadMessages(userId: $userId, limit: $limit, before: $before) {
+      hasMore
+      nextCursor
+      items {
+        ...TeamMessageFields
+      }
+    }
+  }
+  ${TEAM_MESSAGE_FIELDS}
+`;
+
+export const ADMIN_TEAM_BROADCASTS: TypedDocumentNode<
+  { adminTeamBroadcasts: PaginatedTeamBroadcasts },
+  { page?: number; limit?: number }
+> = gql`
+  query AdminTeamBroadcasts($page: Int, $limit: Int) {
+    adminTeamBroadcasts(page: $page, limit: $limit) {
+      data {
+        ...TeamBroadcastFields
+      }
+      meta {
+        page
+        limit
+        total
+        totalPages
+        hasNextPage
+        hasPrevPage
+      }
+    }
+  }
+  ${TEAM_BROADCAST_FIELDS}
+`;
+
+export const ADMIN_SEND_TEAM_MESSAGE: TypedDocumentNode<
+  { adminSendTeamMessage: TeamBroadcast },
+  { input: AdminSendTeamMessageInput }
+> = gql`
+  mutation AdminSendTeamMessage($input: AdminSendTeamMessageInput!) {
+    adminSendTeamMessage(input: $input) {
+      ...TeamBroadcastFields
+    }
+  }
+  ${TEAM_BROADCAST_FIELDS}
+`;
+
+export const ADMIN_REPLY_TEAM_THREAD: TypedDocumentNode<
+  { adminReplyTeamThread: TeamMessage },
+  { userId: string; body: string }
+> = gql`
+  mutation AdminReplyTeamThread($userId: String!, $body: String!) {
+    adminReplyTeamThread(userId: $userId, body: $body) {
+      ...TeamMessageFields
+    }
+  }
+  ${TEAM_MESSAGE_FIELDS}
+`;
+
+export const ADMIN_MARK_TEAM_THREAD_READ: TypedDocumentNode<
+  { adminMarkTeamThreadRead: boolean },
+  { userId: string }
+> = gql`
+  mutation AdminMarkTeamThreadRead($userId: String!) {
+    adminMarkTeamThreadRead(userId: $userId)
+  }
 `;
 
 // ── Users ────────────────────────────────────────────────────────────────────
