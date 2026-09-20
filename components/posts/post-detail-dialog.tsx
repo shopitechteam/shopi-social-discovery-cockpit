@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PostActions } from "./post-actions";
+import { PostTypeBadge, TiktokImportBadge, isTiktokImport } from "./post-badges";
 import { postThumbUrl } from "./post-thumb";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -135,8 +136,15 @@ export function PostDetailDialog({
             <div className="divide-y divide-border rounded-lg border border-border px-3 py-1">
               <Row label="Price">{formatPrice(post.price)}</Row>
               <Row label="Type">
-                {post.type}
-                {post.source === ContentSource.TIKTOK_EMBED ? " · TikTok embed" : ""}
+                <PostTypeBadge post={post} />
+              </Row>
+              <Row label="TikTok import">
+                <span className="inline-flex items-center gap-2">
+                  <TiktokImportBadge post={post} />
+                  {isTiktokImport(post) && post.source === ContentSource.TIKTOK_EMBED && (
+                    <span className="text-muted">embedded from TikTok</span>
+                  )}
+                </span>
               </Row>
               <Row label="Written by">
                 {post.creationMethod === ContentCreationMethod.AGENT

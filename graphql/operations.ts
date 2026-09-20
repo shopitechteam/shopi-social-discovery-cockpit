@@ -123,6 +123,7 @@ const ADMIN_CONTENT_FIELDS = gql`
     caption
     type
     source
+    isTiktokImport
     creationMethod
     status
     isLive

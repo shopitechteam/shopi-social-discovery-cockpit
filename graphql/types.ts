@@ -228,6 +228,12 @@ export interface AdminContent {
   caption?: string | null;
   type: ContentType;
   source: ContentSource;
+  /**
+   * Made from a TikTok video, by any route. `type` stays VIDEO/IMAGE. Null on
+   * posts published before this was recorded — see isTiktokImport() in
+   * components/posts/post-badges.tsx.
+   */
+  isTiktokImport?: boolean | null;
   /** Absent on posts published before the field existed — show "not recorded". */
   creationMethod?: ContentCreationMethod | null;
   status: ContentStatus;

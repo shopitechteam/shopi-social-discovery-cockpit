@@ -2,14 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import { Search, Flag, RefreshCw, Sparkles, PenLine, Music2 } from "lucide-react";
+import { Search, Flag, RefreshCw, Sparkles, PenLine } from "lucide-react";
 import { ADMIN_CONTENT, ADMIN_DASHBOARD_STATS } from "@/graphql/operations";
-import {
-  ContentCreationMethod,
-  ContentSource,
-  ContentStatus,
-  type AdminContent,
-} from "@/graphql/types";
+import { ContentCreationMethod, ContentStatus, type AdminContent } from "@/graphql/types";
 import { formatDate, formatRelative, formatNumber, formatPrice, displayName } from "@/lib/format";
 import { boostRunLabel } from "@/lib/boost";
 import { cn } from "@/lib/utils";
@@ -30,6 +25,7 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Pagination } from "@/components/shared/pagination";
 import { PostThumb } from "@/components/posts/post-thumb";
+import { PostTypeBadge, TiktokImportBadge } from "@/components/posts/post-badges";
 import { PostActions } from "@/components/posts/post-actions";
 import { PostDetailDialog } from "@/components/posts/post-detail-dialog";
 import { MediaRecoveryButton } from "@/components/posts/media-recovery-button";
@@ -51,12 +47,10 @@ const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 350;
 
 /**
- * How the listing got written: Shopi Agent or the seller.
- *
- * TikTok imports are called out separately because they answer a different
- * question — where the media came from — and lumping them into either bucket
- * would make both misleading. Posts published before the field existed show a
- * dash; defaulting them to "Manual" would invent a number.
+ * How the listing got written: Shopi Agent or the seller. (Which create route
+ * the post took — TikTok, video or image — is its own column.) Posts published
+ * before the field existed show a dash; defaulting them to "Manual" would
+ * invent a number.
  */
 function CreationMethodBadge({ post }: { post: AdminContent }) {
   if (post.creationMethod === ContentCreationMethod.AGENT) {
@@ -73,9 +67,6 @@ function CreationMethodBadge({ post }: { post: AdminContent }) {
       <span className="flex items-center gap-1.5 text-sm text-muted">
         <PenLine className="size-3.5" />
         Manual
-        {post.source === ContentSource.TIKTOK_EMBED && (
-          <Music2 className="size-3.5" aria-label="TikTok import" />
-        )}
       </span>
     );
   }
@@ -229,6 +220,8 @@ export default function PostsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Post</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>TikTok import</TableHead>
                   <TableHead>Creator</TableHead>
                   <TableHead>Written by</TableHead>
                   <TableHead>Price</TableHead>
@@ -255,17 +248,20 @@ export default function PostsPage() {
                           <p className="truncate text-sm font-medium text-foreground">
                             {post.title}
                           </p>
-                          <p className="truncate text-xs text-muted">
-                            {post.type.toLowerCase()}
-                            {post.moderation.isReported && (
-                              <span className="ml-1.5 inline-flex items-center gap-0.5 text-error">
-                                <Flag className="size-3" />
-                                {post.moderation.reportCount}
-                              </span>
-                            )}
-                          </p>
+                          {post.moderation.isReported && (
+                            <p className="flex items-center gap-0.5 text-xs text-error">
+                              <Flag className="size-3" />
+                              {post.moderation.reportCount}
+                            </p>
+                          )}
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <PostTypeBadge post={post} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <TiktokImportBadge post={post} />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
