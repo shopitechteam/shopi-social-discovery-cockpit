@@ -29,6 +29,7 @@ import { PostTypeBadge, TiktokImportBadge } from "@/components/posts/post-badges
 import { PostActions } from "@/components/posts/post-actions";
 import { PostDetailDialog } from "@/components/posts/post-detail-dialog";
 import { MediaRecoveryButton } from "@/components/posts/media-recovery-button";
+import { ViewPostLink } from "@/components/posts/view-post-link";
 
 type TabKey = "pending" | "all" | ContentStatus;
 
@@ -245,9 +246,12 @@ export default function PostsPage() {
                       <div className="flex items-center gap-3">
                         <PostThumb post={post} />
                         <div className="min-w-0 max-w-[220px]">
-                          <p className="truncate text-sm font-medium text-foreground">
-                            {post.title}
-                          </p>
+                          <div className="flex items-center gap-1">
+                            <p className="truncate text-sm font-medium text-foreground">
+                              {post.title}
+                            </p>
+                            <ViewPostLink post={post} />
+                          </div>
                           {post.moderation.isReported && (
                             <p className="flex items-center gap-0.5 text-xs text-error">
                               <Flag className="size-3" />

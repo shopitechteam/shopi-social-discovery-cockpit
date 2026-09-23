@@ -25,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { HorizontalBarChart } from "@/components/charts/horizontal-bar-chart";
 import { TimeSeriesChart } from "@/components/charts/time-series-chart";
+import { webUrl } from "@/lib/web-url";
 
 const RANGE_OPTIONS = [
   { label: "7D", days: 7 },
@@ -41,14 +42,6 @@ const SOURCE_LABELS: Record<TrafficSource, string> = {
   DIRECT: "Direct / unknown",
   OTHER: "Other websites",
 };
-
-function webUrl(path: string): string {
-  const base =
-    process.env.NEXT_PUBLIC_SHOPI_WEB_URL ??
-    process.env.NEXT_PUBLIC_WEB_APP_URL ??
-    "http://localhost:3000";
-  return `${base.replace(/\/$/, "")}${path}`;
-}
 
 const pct = (value: number) => `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
 

@@ -3,7 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { toast } from "sonner";
-import { Check, EyeOff, Eye, Images, Loader2, MoreHorizontal, Rocket, Trash2, X } from "lucide-react";
+import {
+  Check,
+  ExternalLink,
+  EyeOff,
+  Eye,
+  Images,
+  Loader2,
+  MoreHorizontal,
+  Rocket,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   APPROVE_CONTENT,
   REJECT_CONTENT,
@@ -24,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { PostMediaDialog } from "./post-media-dialog";
 import { PostBoostDialog } from "./post-boost-dialog";
+import { postPublicState, postPublicUrl } from "@/lib/post-url";
 
 /** Queries to refresh after any moderation action. */
 const REFETCH = ["AdminContent", "AdminDashboardStats", "PendingApprovalContent"];
@@ -144,6 +156,8 @@ export function PostActions({ post }: { post: AdminContent }) {
     setMenuOpen(false);
   }
 
+  const isPublic = postPublicState(post).isPublic;
+
   const actions: Array<{
     key: string;
     label: string;
@@ -153,6 +167,18 @@ export function PostActions({ post }: { post: AdminContent }) {
     destructive?: boolean;
     loading?: boolean;
   }> = [
+    {
+      key: "view",
+      label: "View on Shopi",
+      icon: ExternalLink,
+      onSelect: () => {
+        closeMenu();
+        window.open(postPublicUrl(post), "_blank", "noopener,noreferrer");
+      },
+      // The public site only serves live posts; anything else would open on
+      // "not found".
+      visible: isPublic,
+    },
     {
       key: "approve",
       label: "Approve",

@@ -17,6 +17,7 @@ import {
 import { PostActions } from "./post-actions";
 import { PostTypeBadge, TiktokImportBadge, isTiktokImport } from "./post-badges";
 import { postThumbUrl } from "./post-thumb";
+import { ViewPostLink } from "./view-post-link";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -90,6 +91,7 @@ export function PostDetailDialog({
                 No preview
               </div>
             )}
+            <ViewPostLink post={post} variant="button" />
             {post.source === ContentSource.TIKTOK_EMBED && post.tiktokEmbed?.shareUrl && (
               <a
                 href={post.tiktokEmbed.shareUrl}

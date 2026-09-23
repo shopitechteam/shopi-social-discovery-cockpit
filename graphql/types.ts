@@ -225,6 +225,8 @@ export interface ContentLocation {
 export interface AdminContent {
   id: string;
   title: string;
+  /** Public URL segment; null on posts from before slugs were backfilled. */
+  slug?: string | null;
   caption?: string | null;
   type: ContentType;
   source: ContentSource;

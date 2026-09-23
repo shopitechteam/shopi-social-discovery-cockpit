@@ -51,6 +51,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/shared/pagination";
+import { webUrl } from "@/lib/web-url";
 import {
   RolesDialog,
   SuspendDialog,
@@ -78,11 +79,7 @@ function errMessage(err: unknown): string {
 }
 
 function impersonationUrl(token: string): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SHOPI_WEB_URL ??
-    process.env.NEXT_PUBLIC_WEB_APP_URL ??
-    "http://localhost:3000";
-  return `${baseUrl.replace(/\/$/, "")}/en/auth/impersonate?token=${encodeURIComponent(token)}`;
+  return webUrl(`/en/auth/impersonate?token=${encodeURIComponent(token)}`);
 }
 
 function providerList(user: AdminUser): string {

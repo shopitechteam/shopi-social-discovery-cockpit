@@ -120,6 +120,7 @@ const ADMIN_CONTENT_FIELDS = gql`
   fragment AdminContentFields on Content {
     id
     title
+    slug
     caption
     type
     source
