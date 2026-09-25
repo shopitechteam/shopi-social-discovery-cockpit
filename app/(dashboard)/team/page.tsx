@@ -19,6 +19,8 @@ import {
 } from "@/graphql/types";
 import { displayName, formatDate, formatNumber, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { WS_EVENTS, type TeamThreadUpdatedPayload } from "@/lib/socket/socket-events";
+import { useSocket } from "@/hooks/useSocket";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,8 +41,9 @@ import { ComposeTeamMessageDialog } from "@/components/team/compose-team-message
 
 type View = "replies" | "threads" | "sent";
 
+// No polling: every list below refetches on the API's `team:thread:updated`
+// push, and <TeamInboxSync /> catches up after a dropped socket.
 const PAGE_SIZE = 20;
-const POLL_MS = 30_000;
 const SEARCH_DEBOUNCE_MS = 350;
 
 const AUDIENCE_LABEL: Record<TeamBroadcastAudience, string> = {
@@ -60,13 +63,23 @@ function ThreadPanel({ thread, onChanged }: { thread: TeamThread; onChanged: () 
 
   const { data, loading, refetch } = useQuery(ADMIN_TEAM_THREAD_MESSAGES, {
     variables: { userId: thread.userId, limit: 100 },
-    pollInterval: POLL_MS,
     fetchPolicy: "cache-and-network",
   });
   const [markRead] = useMutation(ADMIN_MARK_TEAM_THREAD_READ);
   const [sendReply, { loading: sending }] = useMutation(ADMIN_REPLY_TEAM_THREAD);
+  const { on } = useSocket();
 
   const messages = useMemo(() => data?.adminTeamThreadMessages.items ?? [], [data]);
+
+  // New messages either way, or the member reading ours ("Seen"). The team
+  // marking the member's replies read changes nothing shown here.
+  useEffect(
+    () =>
+      on<TeamThreadUpdatedPayload>(WS_EVENTS.TEAM_THREAD_UPDATED, ({ reason, userId }) => {
+        if (userId === thread.userId && reason !== "read") void refetch();
+      }),
+    [on, refetch, thread.userId],
+  );
 
   // Opening a thread with unread replies marks them read for the whole team.
   useEffect(() => {
@@ -168,13 +181,22 @@ function ThreadPanel({ thread, onChanged }: { thread: TeamThread; onChanged: () 
 
 function SentTable({ onViewReplies }: { onViewReplies: (broadcast: TeamBroadcast) => void }) {
   const [page, setPage] = useState(1);
-  const { data, loading } = useQuery(ADMIN_TEAM_BROADCASTS, {
+  const { data, loading, refetch } = useQuery(ADMIN_TEAM_BROADCASTS, {
     variables: { page, limit: PAGE_SIZE },
-    pollInterval: POLL_MS,
     fetchPolicy: "cache-and-network",
   });
+  const { on } = useSocket();
   const broadcasts = data?.adminTeamBroadcasts.data ?? [];
   const meta = data?.adminTeamBroadcasts.meta;
+
+  // Reply counts move when a member replies; a new broadcast adds a row.
+  useEffect(
+    () =>
+      on<TeamThreadUpdatedPayload>(WS_EVENTS.TEAM_THREAD_UPDATED, ({ reason }) => {
+        if (reason === "member_reply" || reason === "broadcast") void refetch();
+      }),
+    [on, refetch],
+  );
 
   return (
     <div className="space-y-4">
@@ -272,9 +294,19 @@ export default function TeamMessagesPage() {
       search: submittedSearch || null,
     },
     skip: view === "sent",
-    pollInterval: POLL_MS,
     fetchPolicy: "cache-and-network",
   });
+  const { on } = useSocket();
+
+  // A member reading the team's messages is the only change that leaves the
+  // thread list as it was.
+  useEffect(
+    () =>
+      on<TeamThreadUpdatedPayload>(WS_EVENTS.TEAM_THREAD_UPDATED, ({ reason }) => {
+        if (view !== "sent" && reason !== "member_read") void refetch();
+      }),
+    [on, refetch, view],
+  );
 
   const threads = useMemo(() => data?.adminTeamThreads.data ?? [], [data]);
   const meta = data?.adminTeamThreads.meta;

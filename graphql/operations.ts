@@ -877,6 +877,15 @@ export const ADMIN_TEAM_THREADS: TypedDocumentNode<
   }
 `;
 
+export const ADMIN_TEAM_UNREAD_THREADS: TypedDocumentNode<
+  { adminTeamUnreadThreads: number },
+  Record<string, never>
+> = gql`
+  query AdminTeamUnreadThreads {
+    adminTeamUnreadThreads
+  }
+`;
+
 export const ADMIN_TEAM_THREAD_MESSAGES: TypedDocumentNode<
   { adminTeamThreadMessages: TeamMessagePage },
   { userId: string; limit?: number; before?: string | null }
