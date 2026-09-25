@@ -96,8 +96,8 @@ export default function SocialProofPage() {
             <Sparkles className="size-6 text-primary" />
             <p className="font-semibold text-foreground">No featured sellers yet</p>
             <p className="max-w-md text-sm text-muted">
-              Feature a seller from Users → ⋯ → Social proof. Tracking starts within a minute of
-              featuring them.
+              Feature a seller from Users → ⋯ → Social proof. They appear on the homepage within
+              24 hours, and tracking starts then.
             </p>
             <Button asChild size="sm" variant="outline">
               <Link href="/users">Go to Users</Link>
