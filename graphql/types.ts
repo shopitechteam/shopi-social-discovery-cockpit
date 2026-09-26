@@ -834,7 +834,7 @@ export interface SellerPerformance {
 }
 
 // ── Referrals ────────────────────────────────────────────────────────────────
-// "Invite 5 sellers, earn KSh 200."
+// "Invite a seller. When they post 5 listings, earn KSh 200."
 //
 // Enum values are what GraphQL sends: type-graphql serialises an enum by its
 // key name ("PENDING"), not by the lowercase string the API stores.
@@ -861,8 +861,8 @@ export type ReferralFlag =
   | "REFERRER_SUSPENDED";
 
 export interface ReferralTerms {
+  /** Paid for each invited seller who qualifies. */
   rewardKes: number;
-  sellersPerReward: number;
   minListings: number;
   claimWindowDays: number;
 }
@@ -885,9 +885,10 @@ export interface Referral {
 export interface ReferralReward {
   id: string;
   referrerId: string;
-  sequence: number;
+  /** The referral (one invited seller) this reward pays for. */
+  referralId: string;
+  refereeId: string;
   amountKes: number;
-  sellersRequired: number;
   status: ReferralRewardStatus;
   paidAt?: string | null;
   mpesaReference?: string | null;
@@ -921,8 +922,13 @@ export interface AdminReferralRow {
 
 export interface AdminReferralRewardRow {
   reward: ReferralReward;
+  referral?: Referral | null;
   referrer?: AdminUser | null;
+  /** The invited seller whose listings earned the reward. */
+  referee?: AdminUser | null;
   /** Where to send it, canonical 254XXXXXXXXX. */
   payoutPhone?: string | null;
-  qualifiedCount: number;
+  /** The seller's live listings right now. */
+  liveListingCount: number;
+  flags: ReferralFlag[];
 }

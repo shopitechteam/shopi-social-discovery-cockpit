@@ -1570,9 +1570,9 @@ const REFERRAL_REWARD_FIELDS = gql`
   fragment ReferralRewardFields on ReferralReward {
     id
     referrerId
-    sequence
+    referralId
+    refereeId
     amountKes
-    sellersRequired
     status
     paidAt
     mpesaReference
@@ -1600,7 +1600,6 @@ export const ADMIN_REFERRAL_OVERVIEW: TypedDocumentNode<
       rewardsPaidKes
       terms {
         rewardKes
-        sellersPerReward
         minListings
         claimWindowDays
       }
@@ -1651,11 +1650,18 @@ export const ADMIN_REFERRAL_REWARDS: TypedDocumentNode<
         reward {
           ...ReferralRewardFields
         }
+        referral {
+          ...ReferralFields
+        }
         referrer {
           ...AdminUserFields
         }
+        referee {
+          ...AdminUserFields
+        }
         payoutPhone
-        qualifiedCount
+        liveListingCount
+        flags
       }
       meta {
         page
@@ -1668,6 +1674,7 @@ export const ADMIN_REFERRAL_REWARDS: TypedDocumentNode<
     }
   }
   ${REFERRAL_REWARD_FIELDS}
+  ${REFERRAL_FIELDS}
   ${ADMIN_USER_FIELDS}
 `;
 

@@ -50,9 +50,10 @@ import { Pagination } from "@/components/shared/pagination";
 
 /**
  * The invite programme, from the paying side: who is owed a reward, and the
- * referred sellers behind it. Payouts come first — they are the queue someone
- * works through — and every reward links to its referrer's sellers, so the
- * check before paying ("are these five real?") is one click away.
+ * invited seller behind each one. Payouts come first — they are the queue
+ * someone works through — and every reward row shows its seller's live
+ * listings and review flags, so the check before paying ("is this seller
+ * real?") happens on the row itself.
  */
 
 const PAGE_SIZE = 20;
@@ -158,9 +159,9 @@ export default function ReferralsPage() {
 
       {overview && (
         <p className="text-xs text-muted">
-          Terms: {formatKes(overview.terms.rewardKes)} for every {overview.terms.sellersPerReward}{" "}
-          new sellers who reach {overview.terms.minListings} live listings. Codes can be added by
-          hand up to {overview.terms.claimWindowDays} days after signup.
+          Terms: {formatKes(overview.terms.rewardKes)} for every new seller who reaches{" "}
+          {overview.terms.minListings} live listings. Codes can be added by hand up to{" "}
+          {overview.terms.claimWindowDays} days after signup.
         </p>
       )}
 
@@ -335,8 +336,8 @@ function PayoutsView({ onShowSellers }: { onShowSellers: (referrer: AdminUser) =
               <TableHeader>
                 <TableRow>
                   <TableHead>Referrer</TableHead>
+                  <TableHead>For seller</TableHead>
                   <TableHead>Reward</TableHead>
-                  <TableHead>Qualified sellers</TableHead>
                   <TableHead>M-Pesa</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -350,25 +351,36 @@ function PayoutsView({ onShowSellers }: { onShowSellers: (referrer: AdminUser) =
                     <TableRow key={reward.id}>
                       <TableCell>
                         <Person user={referrer} fallback="Deleted account" />
+                        {referrer && (
+                          <button
+                            type="button"
+                            onClick={() => onShowSellers(referrer)}
+                            className="mt-1 text-xs font-medium text-primary hover:underline"
+                          >
+                            All their sellers
+                          </button>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Person user={row.referee} fallback="Deleted account" />
+                        <p className="mt-1 text-xs text-muted">
+                          {row.liveListingCount} live listing{row.liveListingCount === 1 ? "" : "s"} now
+                        </p>
+                        {row.flags.map((flag) => (
+                          <span
+                            key={flag}
+                            className="mt-0.5 flex items-center gap-1 text-xs font-medium text-secondary-strong"
+                          >
+                            <AlertTriangle className="size-3" />
+                            {FLAG_LABELS[flag] ?? flag}
+                          </span>
+                        ))}
                       </TableCell>
                       <TableCell>
                         <p className="text-sm font-semibold text-foreground">{formatKes(reward.amountKes)}</p>
                         <p className="text-xs text-muted" title={formatDate(reward.createdAt)}>
-                          #{reward.sequence} · earned {formatRelative(reward.createdAt)}
+                          earned {formatRelative(reward.createdAt)}
                         </p>
-                      </TableCell>
-                      <TableCell>
-                        {referrer ? (
-                          <button
-                            type="button"
-                            onClick={() => onShowSellers(referrer)}
-                            className="text-sm font-medium text-primary hover:underline"
-                          >
-                            {row.qualifiedCount} qualified — review
-                          </button>
-                        ) : (
-                          <span className="text-sm text-muted">{row.qualifiedCount}</span>
-                        )}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-sm">
                         {reward.status === ReferralRewardStatus.PAID ? (
@@ -452,7 +464,8 @@ function MarkPaidDialog({ row, onClose }: { row: AdminReferralRewardRow | null; 
           <DialogTitle>Record M-Pesa payout</DialogTitle>
           <DialogDescription>
             Send {row ? formatKes(row.reward.amountKes) : ""} to{" "}
-            {row?.referrer ? displayName(row.referrer) : "the referrer"} first, then record the
+            {row?.referrer ? displayName(row.referrer) : "the referrer"} for inviting{" "}
+            {row?.referee ? displayName(row.referee) : "this seller"} first, then record the
             transaction here. They get a notification with the M-Pesa code.
           </DialogDescription>
         </DialogHeader>
@@ -694,9 +707,9 @@ function RejectDialog({ row, onClose }: { row: AdminReferralRow | null; onClose:
           <DialogTitle>Reject this referral?</DialogTitle>
           <DialogDescription>
             {row?.referee ? displayName(row.referee) : "This seller"} will stop counting for{" "}
-            {row?.referrer ? displayName(row.referrer) : "the referrer"}. If that leaves an unpaid
-            reward short, it is withdrawn. Paid rewards are never touched. The reason is only shown
-            to admins.
+            {row?.referrer ? displayName(row.referrer) : "the referrer"}. If the reward for this seller
+            hasn&apos;t been paid yet, it is withdrawn; a paid reward is never touched. The reason is only
+            shown to admins.
           </DialogDescription>
         </DialogHeader>
 
