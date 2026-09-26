@@ -20,6 +20,13 @@ import type {
   BoostTier,
   PaginationMeta,
   AdminUserDeletionSummary,
+  AdminReferralOverview,
+  AdminReferralRewardRow,
+  AdminReferralRow,
+  Referral,
+  ReferralReward,
+  ReferralRewardStatus,
+  ReferralStatus,
   AdminMediaRecoverySummary,
   AdminSendTeamMessageInput,
   PaginatedTeamBroadcasts,
@@ -1537,4 +1544,165 @@ export const ADMIN_SOCIAL_PROOF_PERFORMANCE: TypedDocumentNode<
       }
     }
   }
+`;
+
+// ── Referrals ────────────────────────────────────────────────────────────────
+// Invite programme review and payouts. Rejecting a referral may withdraw an
+// unpaid reward; marking one paid notifies the referrer.
+
+const REFERRAL_FIELDS = gql`
+  fragment ReferralFields on Referral {
+    id
+    referrerId
+    refereeId
+    code
+    source
+    status
+    listingCount
+    qualifiedAt
+    rejectedAt
+    rejectionReason
+    createdAt
+  }
+`;
+
+const REFERRAL_REWARD_FIELDS = gql`
+  fragment ReferralRewardFields on ReferralReward {
+    id
+    referrerId
+    sequence
+    amountKes
+    sellersRequired
+    status
+    paidAt
+    mpesaReference
+    paidToPhone
+    cancelledAt
+    cancelReason
+    createdAt
+  }
+`;
+
+export const ADMIN_REFERRAL_OVERVIEW: TypedDocumentNode<
+  { adminReferralOverview: AdminReferralOverview },
+  Record<string, never>
+> = gql`
+  query AdminReferralOverview {
+    adminReferralOverview {
+      totalReferrals
+      pending
+      qualified
+      rejected
+      referrers
+      rewardsPending
+      rewardsPendingKes
+      rewardsPaid
+      rewardsPaidKes
+      terms {
+        rewardKes
+        sellersPerReward
+        minListings
+        claimWindowDays
+      }
+    }
+  }
+`;
+
+export const ADMIN_REFERRALS: TypedDocumentNode<
+  { adminReferrals: { data: AdminReferralRow[]; meta: PaginationMeta } },
+  { page?: number; limit?: number; status?: ReferralStatus | null; referrerId?: string | null }
+> = gql`
+  query AdminReferrals($page: Int, $limit: Int, $status: ReferralStatus, $referrerId: String) {
+    adminReferrals(page: $page, limit: $limit, status: $status, referrerId: $referrerId) {
+      data {
+        referral {
+          ...ReferralFields
+        }
+        referrer {
+          ...AdminUserFields
+        }
+        referee {
+          ...AdminUserFields
+        }
+        liveListingCount
+        flags
+      }
+      meta {
+        page
+        limit
+        total
+        totalPages
+        hasNextPage
+        hasPrevPage
+      }
+    }
+  }
+  ${REFERRAL_FIELDS}
+  ${ADMIN_USER_FIELDS}
+`;
+
+export const ADMIN_REFERRAL_REWARDS: TypedDocumentNode<
+  { adminReferralRewards: { data: AdminReferralRewardRow[]; meta: PaginationMeta } },
+  { page?: number; limit?: number; status?: ReferralRewardStatus | null }
+> = gql`
+  query AdminReferralRewards($page: Int, $limit: Int, $status: ReferralRewardStatus) {
+    adminReferralRewards(page: $page, limit: $limit, status: $status) {
+      data {
+        reward {
+          ...ReferralRewardFields
+        }
+        referrer {
+          ...AdminUserFields
+        }
+        payoutPhone
+        qualifiedCount
+      }
+      meta {
+        page
+        limit
+        total
+        totalPages
+        hasNextPage
+        hasPrevPage
+      }
+    }
+  }
+  ${REFERRAL_REWARD_FIELDS}
+  ${ADMIN_USER_FIELDS}
+`;
+
+export const ADMIN_MARK_REFERRAL_REWARD_PAID: TypedDocumentNode<
+  { adminMarkReferralRewardPaid: ReferralReward },
+  { rewardId: string; mpesaReference: string; phone?: string | null }
+> = gql`
+  mutation AdminMarkReferralRewardPaid($rewardId: String!, $mpesaReference: String!, $phone: String) {
+    adminMarkReferralRewardPaid(rewardId: $rewardId, mpesaReference: $mpesaReference, phone: $phone) {
+      ...ReferralRewardFields
+    }
+  }
+  ${REFERRAL_REWARD_FIELDS}
+`;
+
+export const ADMIN_REJECT_REFERRAL: TypedDocumentNode<
+  { adminRejectReferral: Referral },
+  { referralId: string; reason: string }
+> = gql`
+  mutation AdminRejectReferral($referralId: String!, $reason: String!) {
+    adminRejectReferral(referralId: $referralId, reason: $reason) {
+      ...ReferralFields
+    }
+  }
+  ${REFERRAL_FIELDS}
+`;
+
+export const ADMIN_RESTORE_REFERRAL: TypedDocumentNode<
+  { adminRestoreReferral: Referral },
+  { referralId: string }
+> = gql`
+  mutation AdminRestoreReferral($referralId: String!) {
+    adminRestoreReferral(referralId: $referralId) {
+      ...ReferralFields
+    }
+  }
+  ${REFERRAL_FIELDS}
 `;

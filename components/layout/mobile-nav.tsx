@@ -18,6 +18,7 @@ import {
   Rocket,
   Sparkles,
   Users,
+  Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NavBadge } from "@/components/layout/sidebar";
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { href: "/moderation", label: "Moderation", icon: Siren },
   { href: "/posts", label: "Posts", icon: Clapperboard },
   { href: "/boosts", label: "Boosts", icon: Rocket },
+  { href: "/referrals", label: "Referrals", icon: Gift },
   { href: "/users", label: "Users", icon: Users },
   { href: "/creators", label: "Creators", icon: Trophy },
   { href: "/social-proof", label: "Social proof", icon: Sparkles },

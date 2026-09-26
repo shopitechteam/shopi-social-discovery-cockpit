@@ -832,3 +832,97 @@ export interface SellerPerformance {
   sources: { source: TrafficSource; visits: number; conversions: number }[];
   daily: { date: string; clicks: number; visits: number; conversions: number }[];
 }
+
+// ── Referrals ────────────────────────────────────────────────────────────────
+// "Invite 5 sellers, earn KSh 200."
+//
+// Enum values are what GraphQL sends: type-graphql serialises an enum by its
+// key name ("PENDING"), not by the lowercase string the API stores.
+
+export enum ReferralStatus {
+  PENDING = "PENDING",
+  QUALIFIED = "QUALIFIED",
+  REJECTED = "REJECTED",
+}
+
+export enum ReferralRewardStatus {
+  PENDING = "PENDING",
+  PAID = "PAID",
+  CANCELLED = "CANCELLED",
+}
+
+export type ReferralSource = "LINK" | "CODE";
+
+/** Review signals computed by the API; see ReferralService.flagsFor. */
+export type ReferralFlag =
+  | "SAME_PHONE_AS_REFERRER"
+  | "LISTINGS_REMOVED"
+  | "REFEREE_SUSPENDED"
+  | "REFERRER_SUSPENDED";
+
+export interface ReferralTerms {
+  rewardKes: number;
+  sellersPerReward: number;
+  minListings: number;
+  claimWindowDays: number;
+}
+
+export interface Referral {
+  id: string;
+  referrerId: string;
+  refereeId: string;
+  code: string;
+  source: ReferralSource;
+  status: ReferralStatus;
+  /** Live listings when last checked; the row's liveListingCount is current. */
+  listingCount: number;
+  qualifiedAt?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  createdAt: string;
+}
+
+export interface ReferralReward {
+  id: string;
+  referrerId: string;
+  sequence: number;
+  amountKes: number;
+  sellersRequired: number;
+  status: ReferralRewardStatus;
+  paidAt?: string | null;
+  mpesaReference?: string | null;
+  /** Canonical 254XXXXXXXXX. */
+  paidToPhone?: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  createdAt: string;
+}
+
+export interface AdminReferralOverview {
+  totalReferrals: number;
+  pending: number;
+  qualified: number;
+  rejected: number;
+  referrers: number;
+  rewardsPending: number;
+  rewardsPendingKes: number;
+  rewardsPaid: number;
+  rewardsPaidKes: number;
+  terms: ReferralTerms;
+}
+
+export interface AdminReferralRow {
+  referral: Referral;
+  referrer?: AdminUser | null;
+  referee?: AdminUser | null;
+  liveListingCount: number;
+  flags: ReferralFlag[];
+}
+
+export interface AdminReferralRewardRow {
+  reward: ReferralReward;
+  referrer?: AdminUser | null;
+  /** Where to send it, canonical 254XXXXXXXXX. */
+  payoutPhone?: string | null;
+  qualifiedCount: number;
+}
