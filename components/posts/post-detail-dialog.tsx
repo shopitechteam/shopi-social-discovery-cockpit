@@ -2,7 +2,12 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { ExternalLink, Flag } from "lucide-react";
-import { ContentCreationMethod, ContentSource, type AdminContent } from "@/graphql/types";
+import {
+  ContentCreationMethod,
+  ContentSource,
+  ReferralStatus,
+  type AdminContent,
+} from "@/graphql/types";
 import { formatDate, formatNumber, formatPrice, displayName } from "@/lib/format";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PostActions } from "./post-actions";
-import { PostTypeBadge, TiktokImportBadge, isTiktokImport } from "./post-badges";
+import { PostTypeBadge, TiktokImportBadge, isTiktokImport, referrerLabel } from "./post-badges";
 import { postThumbUrl } from "./post-thumb";
 import { ViewPostLink } from "./view-post-link";
 
@@ -155,6 +160,28 @@ export function PostDetailDialog({
                     ? "The seller, manually"
                     : "— (posted before this was recorded)"}
               </Row>
+              {/* Only the posts table selects referredBy; elsewhere it is undefined. */}
+              {post.creator?.referredBy !== undefined && (
+                <Row label="Referred">
+                  {post.creator.referredBy ? (
+                    <>
+                      Yes · {referrerLabel(post.creator.referredBy)}
+                      {post.creator.referredBy.referrer?.email && (
+                        <span className="block text-xs text-muted">
+                          {post.creator.referredBy.referrer.email}
+                        </span>
+                      )}
+                      <span className="block text-xs text-muted">
+                        Code {post.creator.referredBy.code}
+                        {post.creator.referredBy.status === ReferralStatus.REJECTED &&
+                          " · referral rejected"}
+                      </span>
+                    </>
+                  ) : (
+                    "No"
+                  )}
+                </Row>
+              )}
               <Row label="Location">
                 {[post.location?.placeName, post.location?.subregion, post.location?.county]
                   .filter(Boolean)

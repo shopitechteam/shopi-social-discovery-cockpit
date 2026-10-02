@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeamUnreadThreads } from "@/components/team/team-inbox-sync";
+import { usePendingReviewCount } from "@/components/posts/pending-review-sync";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -38,6 +39,16 @@ const NAV_ITEMS = [
   { href: "/system", label: "System", icon: Activity },
 ];
 
+/** Nav items that carry a count badge, and what that count means to a screen reader. */
+export function navBadgeFor(
+  href: string,
+  counts: { teamUnread: number; pendingReview: number },
+): { count: number; label: string } | null {
+  if (href === "/team") return { count: counts.teamUnread, label: "unread replies" };
+  if (href === "/posts") return { count: counts.pendingReview, label: "posts pending review" };
+  return null;
+}
+
 export function NavBadge({ count, label }: { count: number; label: string }) {
   return (
     <span className="ml-auto shrink-0 rounded-full bg-primary px-1.5 text-xs font-bold text-on-brand">
@@ -50,6 +61,7 @@ export function NavBadge({ count, label }: { count: number; label: string }) {
 export function Sidebar() {
   const pathname = usePathname();
   const teamUnread = useTeamUnreadThreads();
+  const pendingReview = usePendingReviewCount();
 
   return (
     <aside className="sticky top-0 hidden h-screen w-52 shrink-0 flex-col border-r border-border bg-elevated md:flex">
@@ -70,7 +82,7 @@ export function Sidebar() {
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-          const badge = href === "/team" ? teamUnread : 0;
+          const badge = navBadgeFor(href, { teamUnread, pendingReview });
           return (
             <Link
               key={href}
@@ -84,7 +96,7 @@ export function Sidebar() {
             >
               <Icon className="size-4.5 shrink-0" />
               <span className="truncate">{label}</span>
-              {badge > 0 && <NavBadge count={badge} label="unread replies" />}
+              {badge && badge.count > 0 && <NavBadge count={badge.count} label={badge.label} />}
             </Link>
           );
         })}

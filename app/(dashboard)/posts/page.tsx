@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@apollo/client/react";
+import { useApolloClient, useQuery } from "@apollo/client/react";
 import { Search, Flag, RefreshCw, Sparkles, PenLine } from "lucide-react";
-import { ADMIN_CONTENT, ADMIN_DASHBOARD_STATS } from "@/graphql/operations";
+import { ADMIN_CONTENT, ADMIN_PENDING_REVIEW_COUNT } from "@/graphql/operations";
 import { ContentCreationMethod, ContentStatus, type AdminContent } from "@/graphql/types";
 import { formatDate, formatRelative, formatNumber, formatPrice, displayName } from "@/lib/format";
 import { boostRunLabel } from "@/lib/boost";
@@ -25,7 +25,8 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Pagination } from "@/components/shared/pagination";
 import { PostThumb } from "@/components/posts/post-thumb";
-import { PostTypeBadge, TiktokImportBadge } from "@/components/posts/post-badges";
+import { PostTypeBadge, ReferredBadge, TiktokImportBadge } from "@/components/posts/post-badges";
+import { usePendingReviewCount } from "@/components/posts/pending-review-sync";
 import { PostActions } from "@/components/posts/post-actions";
 import { PostDetailDialog } from "@/components/posts/post-detail-dialog";
 import { MediaRecoveryButton } from "@/components/posts/media-recovery-button";
@@ -99,8 +100,8 @@ export default function PostsPage() {
     },
   });
 
-  const { data: statsData, refetch: refetchStats } = useQuery(ADMIN_DASHBOARD_STATS);
-  const pendingCount = statsData?.adminDashboardStats.pendingReviewContent ?? 0;
+  const client = useApolloClient();
+  const pendingCount = usePendingReviewCount();
 
   const posts = useMemo(() => data?.adminContent.data ?? [], [data]);
   const meta = data?.adminContent.meta;
@@ -139,7 +140,7 @@ export default function PostsPage() {
           status: activeTab.status ?? null,
           search: submittedSearch || null,
         }),
-        refetchStats(),
+        client.refetchQueries({ include: [ADMIN_PENDING_REVIEW_COUNT] }),
       ]);
     } finally {
       setRefreshing(false);
@@ -224,6 +225,7 @@ export default function PostsPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>TikTok import</TableHead>
                   <TableHead>Creator</TableHead>
+                  <TableHead>Referred</TableHead>
                   <TableHead>Written by</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
@@ -278,6 +280,9 @@ export default function PostsPage() {
                           {displayName(post.creator)}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <ReferredBadge post={post} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <CreationMethodBadge post={post} />

@@ -207,6 +207,33 @@ const ADMIN_CONTENT_FIELDS = gql`
   }
 `;
 
+/**
+ * Who invited a post's creator. Selected by the posts table only, not folded
+ * into AdminContentFields: it is resolved per creator, and the overview and
+ * system queries that share that fragment never show it.
+ */
+const CREATOR_REFERRAL_FIELDS = gql`
+  fragment CreatorReferralFields on User {
+    referredBy {
+      referralId
+      code
+      source
+      status
+      referredAt
+      referrer {
+        id
+        email
+        username
+        profile {
+          firstName
+          lastName
+          avatar
+        }
+      }
+    }
+  }
+`;
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 export const ADMIN_LOGIN: TypedDocumentNode<
@@ -280,6 +307,19 @@ export const ADMIN_DASHBOARD_STATS: TypedDocumentNode<
       totalViews
       totalLikes
     }
+  }
+`;
+
+/**
+ * Posts waiting for approval, for the Posts nav badge. One cheap count, so it
+ * is polled — adminDashboardStats runs a dozen counts and is not.
+ */
+export const ADMIN_PENDING_REVIEW_COUNT: TypedDocumentNode<
+  { adminPendingReviewCount: number },
+  Record<string, never>
+> = gql`
+  query AdminPendingReviewCount {
+    adminPendingReviewCount
   }
 `;
 
@@ -721,6 +761,10 @@ export const ADMIN_CONTENT: TypedDocumentNode<
     ) {
       data {
         ...AdminContentFields
+        creator {
+          id
+          ...CreatorReferralFields
+        }
       }
       meta {
         page
@@ -733,6 +777,7 @@ export const ADMIN_CONTENT: TypedDocumentNode<
     }
   }
   ${ADMIN_CONTENT_FIELDS}
+  ${CREATOR_REFERRAL_FIELDS}
 `;
 
 export const APPROVE_CONTENT: TypedDocumentNode<

@@ -21,8 +21,9 @@ import {
   Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NavBadge } from "@/components/layout/sidebar";
+import { NavBadge, navBadgeFor } from "@/components/layout/sidebar";
 import { useTeamUnreadThreads } from "@/components/team/team-inbox-sync";
+import { usePendingReviewCount } from "@/components/posts/pending-review-sync";
 import {
   Dialog,
   DialogClose,
@@ -54,6 +55,11 @@ const NAV_ITEMS = [
 export function MobileNav() {
   const pathname = usePathname();
   const teamUnread = useTeamUnreadThreads();
+  const pendingReview = usePendingReviewCount();
+  const pending = [
+    teamUnread > 0 && `${teamUnread} unread Shopi team replies`,
+    pendingReview > 0 && `${pendingReview} posts pending review`,
+  ].filter(Boolean);
 
   return (
     <Dialog>
@@ -63,14 +69,14 @@ export function MobileNav() {
           size="icon"
           className="relative md:hidden"
           aria-label={
-            teamUnread > 0
-              ? `Open navigation menu, ${teamUnread} unread Shopi team replies`
+            pending.length > 0
+              ? `Open navigation menu, ${pending.join(", ")}`
               : "Open navigation menu"
           }
         >
           <Menu />
-          {/* The nav is hidden behind this button on phones, so flag unread here too. */}
-          {teamUnread > 0 && (
+          {/* The nav is hidden behind this button on phones, so flag badges here too. */}
+          {pending.length > 0 && (
             <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
           )}
         </Button>
@@ -92,7 +98,7 @@ export function MobileNav() {
         <nav className="space-y-1 px-3 py-4">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-            const badge = href === "/team" ? teamUnread : 0;
+            const badge = navBadgeFor(href, { teamUnread, pendingReview });
             return (
               <DialogClose asChild key={href}>
                 <Link
@@ -106,7 +112,7 @@ export function MobileNav() {
                 >
                   <Icon className="size-4.5" />
                   {label}
-                  {badge > 0 && <NavBadge count={badge} label="unread replies" />}
+                  {badge && badge.count > 0 && <NavBadge count={badge.count} label={badge.label} />}
                 </Link>
               </DialogClose>
             );

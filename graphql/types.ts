@@ -132,6 +132,8 @@ export interface AdminUser {
   signupDevice?: SignupDevice | null;
   /** Admin-only; null until a post location is saved or an IP lookup resolves. */
   adminLocation?: AdminUserLocation | null;
+  /** Admin-only, selected by the posts table. Null when they joined on their own. */
+  referredBy?: AdminReferredBy | null;
   createdAt: string;
 }
 
@@ -852,6 +854,17 @@ export enum ReferralRewardStatus {
 }
 
 export type ReferralSource = "LINK" | "CODE";
+
+/** Who invited a user, from their referral record. */
+export interface AdminReferredBy {
+  referralId: string;
+  code: string;
+  source: ReferralSource;
+  status: ReferralStatus;
+  referredAt: string;
+  /** Null when the inviter's account no longer exists. */
+  referrer?: Pick<AdminUser, "id" | "email" | "username" | "profile"> | null;
+}
 
 /** Review signals computed by the API; see ReferralService.flagsFor. */
 export type ReferralFlag =

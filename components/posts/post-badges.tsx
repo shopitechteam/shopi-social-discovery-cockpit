@@ -1,6 +1,54 @@
-import { Clapperboard, ImageIcon, Music2, Type } from "lucide-react";
+import { Clapperboard, Gift, ImageIcon, Music2, Type } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ContentSource, ContentType, type AdminContent } from "@/graphql/types";
+import { displayName } from "@/lib/format";
+import {
+  ContentSource,
+  ContentType,
+  ReferralStatus,
+  type AdminContent,
+  type AdminReferredBy,
+} from "@/graphql/types";
+
+/** "by Jane Doe", or a note that the inviter's account is gone. */
+export function referrerLabel(referredBy: AdminReferredBy): string {
+  return referredBy.referrer ? `by ${displayName(referredBy.referrer)}` : "by a deleted account";
+}
+
+/**
+ * Whether the post's seller joined through someone's invite, with the inviter
+ * underneath. A referred seller's live listings count toward that inviter's
+ * reward, so it is worth knowing while approving.
+ */
+export function ReferredBadge({ post }: { post: Pick<AdminContent, "creator"> }) {
+  if (!post.creator) {
+    return (
+      <span className="text-sm text-muted" title="Creator account not found">
+        —
+      </span>
+    );
+  }
+
+  const referredBy = post.creator.referredBy;
+  if (!referredBy) return <span className="text-sm text-muted">No</span>;
+
+  return (
+    <div className="flex flex-col items-start gap-0.5">
+      <Badge className="flex w-fit items-center gap-1">
+        <Gift className="size-3.5" />
+        Yes
+      </Badge>
+      <span
+        className="max-w-[140px] truncate text-[11px] text-muted"
+        title={referredBy.referrer?.email ?? undefined}
+      >
+        {referrerLabel(referredBy)}
+      </span>
+      {referredBy.status === ReferralStatus.REJECTED && (
+        <span className="text-[11px] text-error">referral rejected</span>
+      )}
+    </div>
+  );
+}
 
 /** The media type. Always VIDEO or IMAGE — a TikTok import is still a video. */
 export function PostTypeBadge({ post }: { post: Pick<AdminContent, "type"> }) {

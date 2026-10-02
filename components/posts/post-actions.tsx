@@ -38,7 +38,12 @@ import { PostBoostDialog } from "./post-boost-dialog";
 import { postPublicState, postPublicUrl } from "@/lib/post-url";
 
 /** Queries to refresh after any moderation action. */
-const REFETCH = ["AdminContent", "AdminDashboardStats", "PendingApprovalContent"];
+const REFETCH = [
+  "AdminContent",
+  "AdminDashboardStats",
+  "AdminPendingReviewCount",
+  "PendingApprovalContent",
+];
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Something went wrong";
